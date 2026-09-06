@@ -14,6 +14,9 @@ pub const DEFAULT_ONBOARDING_URL: &str = "https://httpbin.org/post";
 pub const DEFAULT_ONBOARDING_HOST: &str = "httpbin.org";
 /// KV key in the tenant `config` map that overrides the endpoint.
 pub const ONBOARDING_URL_KEY: &str = "onboarding_url";
+/// Prefix of every placeholder the host is expected to substitute.
+/// Finding it in a response means substitution did not happen.
+pub const MARKER_PREFIX: &str = "{{profile.";
 
 #[derive(serde::Deserialize, Debug)]
 pub struct OnboardingReq {
@@ -32,6 +35,10 @@ pub struct OnboardingResp {
     /// Reference id echoed by the procurement system, when it returns one.
     pub reference: String,
     pub endpoint_host: String,
+    /// Whether the host actually substituted the `{{profile.*}}` markers.
+    ///
+    /// `resolved` | `unresolved` | `unknown`. See [`placeholder_state`].
+    pub placeholders: String,
 }
 
 pub fn submit_onboarding(input: &[u8]) -> Result<Vec<u8>, String> {
@@ -98,6 +105,37 @@ pub fn host_of(url: &str) -> String {
         .to_string()
 }
 
+/// Reports whether the host resolved the `{{profile.*}}` markers, by looking for
+/// what is *missing* from the response rather than for what is in it.
+///
+/// The contract cannot see the substituted values: it hands the body to the host
+/// with markers in place and never sees it again. So if substitution silently
+/// stopped happening, this contract would post the literal string
+/// `{{profile.first_name}}` to a procurement system and report success.
+///
+/// An echoing endpoint gives a way to tell, without any personal data crossing
+/// back: if the echo still contains the marker prefix, nothing was substituted.
+/// The values themselves are never examined, compared, or returned — only their
+/// absence is.
+///
+/// - `resolved`   — the endpoint echoed the request and no markers survived
+/// - `unresolved` — markers came back verbatim; the record now holds template
+///                  strings where a name should be, and someone must look
+/// - `unknown`    — the endpoint did not echo, so there is nothing to infer from
+pub fn placeholder_state(body: &[u8]) -> &'static str {
+    let text = String::from_utf8_lossy(body);
+    if text.contains(MARKER_PREFIX) {
+        return "unresolved";
+    }
+    // Only an echo can prove resolution. Treating a non-echoing endpoint as
+    // "resolved" would turn silence into a guarantee.
+    if text.contains("t3n-kyb-agent") {
+        "resolved"
+    } else {
+        "unknown"
+    }
+}
+
 /// Pulls a reference id out of whatever the procurement system returned.
 ///
 /// Different systems name it differently, and httpbin returns neither, so an
@@ -156,11 +194,21 @@ fn submit_wasm(req: OnboardingReq) -> Result<OnboardingResp, String> {
         req.legal_name, response.code
     ));
 
+    let placeholders = placeholder_state(&response.payload);
+    if placeholders == "unresolved" {
+        // Worth a log line of its own: the record was accepted, so nothing looks
+        // wrong downstream, but it now holds template strings instead of a name.
+        let _ = logging::error(
+            "onboarding accepted but the profile placeholders came back unresolved -              the record contains template strings, not the submitter's details",
+        );
+    }
+
     Ok(OnboardingResp {
         submitted,
         status_code: response.code,
         reference: extract_reference(&response.payload),
         endpoint_host: host,
+        placeholders: placeholders.to_string(),
     })
 }
 
@@ -250,6 +298,39 @@ mod tests {
         assert_eq!(extract_reference(br#"{"id":"abc"}"#), "abc");
         assert_eq!(extract_reference(br#"{"json":{}}"#), "");
         assert_eq!(extract_reference(b"not json"), "");
+    }
+
+    /// The contract cannot observe the substitution directly, so this reads the
+    /// echo for what is *absent*. A surviving marker means the record was filed
+    /// with template strings where a person's name belongs.
+    #[test]
+    fn placeholder_state_reads_absence_not_content() {
+        // httpbin-shaped echo, markers substituted by the host.
+        let resolved = br#"{"json":{"source":"t3n-kyb-agent","submitted_by":{"first_name":"Ada"}}}"#;
+        assert_eq!(placeholder_state(resolved), "resolved");
+
+        // Same echo, but substitution did not happen.
+        let unresolved =
+            br#"{"json":{"source":"t3n-kyb-agent","submitted_by":{"first_name":"{{profile.first_name}}"}}}"#;
+        assert_eq!(placeholder_state(unresolved), "unresolved");
+
+        // A system that acknowledges without echoing proves nothing either way,
+        // and silence must not be reported as a guarantee.
+        assert_eq!(placeholder_state(br#"{"id":"SUP-42"}"#), "unknown");
+        assert_eq!(placeholder_state(b""), "unknown");
+    }
+
+    /// Whatever `build_payload` writes must be what `placeholder_state` looks
+    /// for. If someone renames the marker format in one place only, the check
+    /// silently starts reporting "resolved" for an unsubstituted body.
+    #[test]
+    fn the_payload_and_the_check_agree_on_the_marker_format() {
+        let payload = build_payload(&request()).to_string();
+        assert!(
+            payload.contains(MARKER_PREFIX),
+            "build_payload no longer emits {MARKER_PREFIX}, so placeholder_state cannot detect it"
+        );
+        assert_eq!(placeholder_state(payload.as_bytes()), "unresolved");
     }
 
     /// The response body is the one place plaintext PII can re-enter the

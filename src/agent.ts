@@ -45,6 +45,8 @@ interface OnboardingResp {
   status_code: number;
   reference: string;
   endpoint_host: string;
+  /** Whether the host substituted the profile markers: see the contract. */
+  placeholders: "resolved" | "unresolved" | "unknown";
 }
 
 interface Args {
@@ -174,8 +176,25 @@ async function main(): Promise<void> {
     `\nonboarding submitted to ${submission.endpoint_host}: HTTP ${submission.status_code}` +
       (submission.reference ? ` (ref ${submission.reference})` : ""),
   );
-  console.log("the contact person's name and email were resolved inside the enclave —");
-  console.log("this process never held them.");
+
+  // The contract reports this by looking for markers that are absent from the
+  // response, never by reading the values. Printing the state rather than the
+  // data is the point: it shows the guarantee held without restating the PII.
+  switch (submission.placeholders) {
+    case "resolved":
+      console.log("placeholders: resolved by the host inside the enclave.");
+      console.log("the contact person's name and email were never held by this process.");
+      break;
+    case "unresolved":
+      console.error("placeholders: NOT resolved. The record was filed with template strings");
+      console.error("  instead of the submitter's details. Check that the calling user has a");
+      console.error("  complete profile and that this agent is authorised to read those fields.");
+      process.exitCode = 1;
+      break;
+    default:
+      console.log("placeholders: endpoint did not echo the request, so resolution is unverified.");
+      console.log("the contact person's details were still never held by this process.");
+  }
 }
 
 main().catch((error: unknown) => {

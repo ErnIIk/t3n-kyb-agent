@@ -37,7 +37,7 @@ signup, nothing to configure:
 npm ci && npm run test:contract && npm run build:contract && npm run typecheck
 ```
 
-That compiles the TEE contract to a WASM component, runs 40 tests, and typechecks the client. The
+That compiles the TEE contract to a WASM component, runs 42 tests, and typechecks the client. The
 same four commands are what CI runs on every push.
 
 ## Why this, on this platform
@@ -127,6 +127,24 @@ the enclave, at dispatch time, and only if the calling user has authorised *this
 function and *this* destination host. The contract cannot read them, cannot log them, and cannot
 send them anywhere else. A redirect to a different host fails with `host/http.egress_denied`
 before any substitution happens.
+
+### Proving the substitution actually happened
+
+The contract hands the body to the host and never sees it again, so it cannot observe the values
+being filled in. If substitution silently stopped working, this contract would post the literal
+string `{{profile.first_name}}` to a procurement system and report success.
+
+So it checks for what is *absent*. An echoing endpoint returns the request; if the marker prefix
+survives in that echo, nothing was substituted. The values are never read, compared or returned,
+only their absence is, and the result comes back as one word:
+
+```
+onboarding submitted to httpbin.org: HTTP 200
+placeholders: resolved by the host inside the enclave.
+```
+
+`unresolved` exits non-zero and says the record was filed with template strings instead of a name.
+`unknown` is what a non-echoing endpoint gets, because silence is not a guarantee.
 
 A test enforces this so a future edit cannot quietly inline a real value:
 
@@ -224,7 +242,7 @@ This was built to be handed over, so the things that rot are documented rather t
   `ONBOARDING_URL=... npm run deploy` (the host must also be in the grant).
 - **Redeploying** requires bumping `version` in `contract/Cargo.toml`; the node rejects a
   re-register at the same version, and `deploy.ts` says so explicitly when it happens.
-- **No credentials are needed to work on this.** CI builds the contract, runs 40 tests and
+- **No credentials are needed to work on this.** CI builds the contract, runs 42 tests and
   typechecks the client without any T3N key.
 - **It tells you when it stops working.** [A weekly workflow](.github/workflows/smoke.yml) runs the
   real agent against testnet and fails loudly if it breaks, checking the public registries in a

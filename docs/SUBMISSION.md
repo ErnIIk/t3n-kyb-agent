@@ -7,7 +7,7 @@
 **t3n-kyb-agent** is a supplier due-diligence (KYB) agent on the T3 Agent Developer Kit.
 
 - Repository: `https://github.com/ErnIIk/t3n-kyb-agent` *(public)*
-- Contract: `z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts`, contract id **883**,
+- Contract: `z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts`, contract id **886**, version 0.1.1,
   Rust compiled to a `wasm32-wasip2` component
 - Agent card (live, hosted by T3N):
   `https://cn-api.sg.testnet.t3n.terminal3.io/api/agent-card/did:t3n:d7a47645b122ce1151f1f6ecdd40a4ab2de7318d`
@@ -29,6 +29,7 @@ address : 23-25, avenue Franklin Delano Roosevelt, 75008, Paris, FR
 other matches: DEUTSCHE BANK AKTIENGESELLSCHAFT; Deutsche Vermögensberatung Bank Aktiengesellschaft
 
 onboarding submitted to httpbin.org: HTTP 200
+placeholders: resolved by the host inside the enclave.
 ```
 
 Getting there required working around **a platform bug that currently blocks every new SDK install**
@@ -124,7 +125,7 @@ to justify a rejection to the supplier.
 6. `npm run kyb`: a full KYB verdict against live GLEIF and VIES data
 7. `npm run kyb -- --submit`: onboarding filed; the echoed body shows the `{{profile.*}}` markers
    resolved by the host and never by the contract
-8. `npm run test:contract`: 40 tests passing with no credentials configured
+8. `npm run test:contract`: 42 tests passing with no credentials configured
 
 ## Usefulness and ease of maintenance
 
@@ -132,7 +133,7 @@ This was the judging criterion I optimised for, so the specifics rather than adj
 
 - **It runs with no third-party accounts.** GLEIF and VIES are free and keyless. The only credentials
   anyone needs are their own two T3N keys.
-- **40 tests, none of which need credentials.** CI builds the contract, runs the suite and typechecks
+- **42 tests, none of which need credentials.** CI builds the contract, runs the suite and typechecks
   the client on every push, with no secrets configured.
 - **The build fails when the grant drifts from the code.** `contract/tests/allowlist.rs` reads
   `src/session.ts` and fails if a host or function the contract uses is missing from the agent grant.
@@ -274,7 +275,7 @@ I am happy to walk someone through it or answer questions during the transfer.
 > email are resolved inside the enclave and never touch my process.
 >
 > Both registries are public and keyless, so you can clone it and get a real verdict with just your
-> own T3N keys. 40 tests, none of which need credentials.
+> own T3N keys. 42 tests, none of which need credentials.
 >
 > https://github.com/ErnIIk/t3n-kyb-agent
 
