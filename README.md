@@ -9,8 +9,8 @@ details ever touching the agent's process.
 ```
 $ npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980
 
-agent   : did:t3n:9f2a...
-contract: z:1a2b...:kyb-contracts@0.1.0
+agent   : did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c
+contract: z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts@0.1.0
 supplier: Deutsche Bank Aktiengesellschaft
 
 verdict : PASS (risk 0/100)
@@ -142,9 +142,16 @@ Prerequisites: Node 20+, Rust with `wasm32-wasip2`, and **two** keys from the
 — one for you, one for the agent. They are separate identities with separate credits; reusing one
 key for both defeats the delegation model this repository exists to demonstrate.
 
-Visit the claim page twice: each visit issues a fresh key with its own credits. That fact is
-documented only on the org-agent page, while the claim page says the key "is shown once… no way to
-view it again", which reads as one key per account — see [BUGS.md](BUGS.md) #11.
+**Two accounts, not two visits.** Claiming a second key from the *same* account gives you a second
+keypair bound to the *same* DID — verified against the live cluster, see [BUGS.md](BUGS.md) #11. A
+separate agent principal needs a separate claim-page account. `npm run whoami` refuses to continue if
+both keys resolve to one DID, so you find out in five seconds rather than after deploying.
+
+**One flag you currently need.** The testnet trust manifest omits a field SDK 5.10 requires, so
+`fetchTrustedManifest` rejects it and nothing connects ([BUGS.md](BUGS.md) #12). Until the cluster
+publishes `rtmr1_allowlist`, prefix the commands below with `T3N_UNSAFE_TRUST=1`, which uses the
+SDK's documented escape hatch and prints a warning on every run. It skips node attestation, so it is
+a testnet workaround and nothing more.
 
 ```bash
 git clone https://github.com/ErnIIk/t3n-kyb-agent && cd t3n-kyb-agent
@@ -153,17 +160,22 @@ rustup target add wasm32-wasip2
 
 cp .env.example .env       # paste both keys
 
-npm run quickstart         # the documented Quickstart: prints your tenant DID
-npm run whoami             # verifies both identities before anything is deployed
+T3N_UNSAFE_TRUST=1 npm run quickstart   # documented Quickstart: prints your tenant DID
+T3N_UNSAFE_TRUST=1 npm run whoami       # verifies both identities before anything is deployed
 ```
 
 `quickstart` prints your tenant DID — put it in `.env` as `T3N_TENANT_DID`, then:
 
 ```bash
-npm run setup              # build the contract, register it, create maps, grant the agent
-npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980
-npm run kyb -- --name "Acme GmbH" --country DE --vat 811907980 --submit
+T3N_UNSAFE_TRUST=1 npm run setup        # build, register, create maps, sign the grant
+T3N_UNSAFE_TRUST=1 npm run register-card
+
+T3N_UNSAFE_TRUST=1 npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980
+T3N_UNSAFE_TRUST=1 npm run kyb -- --name "Acme GmbH" --country DE --vat 811907980 --submit
 ```
+
+Drop the prefix as soon as the manifest is fixed; the code prefers real verification and only falls
+back when the flag is set.
 
 `npm run setup` is `build:contract` + `deploy` + `grant`. Every step is idempotent — re-running it
 after a failure is safe, and the only thing that ever needs a manual bump is the contract version
