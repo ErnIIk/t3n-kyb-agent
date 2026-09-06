@@ -127,8 +127,8 @@ code, re-check these:
 
 | Claim | Where | How to check |
 |---|---|---|
-| test count | README, SUBMISSION, WALKTHROUGH, MAINTENANCE, screenshots | `npm run test:contract` |
-| bug count | SUBMISSION | `grep -cE '^## [0-9]+' BUGS.md` |
+| test count | README, WALKTHROUGH, MAINTENANCE, screenshots | `npm run test:contract` |
+| bug count | BUGS.md | `grep -cE '^## [0-9]+' BUGS.md` |
 | the component's capabilities | ARCHITECTURE, `wit/world.wit` | `wasm-tools component wit contract/target/wasm32-wasip2/release/z_tenant_kyb.wasm` |
 | `index.d.ts` line references | BUGS.md | `sed -n '<line>p' node_modules/@terminal3/t3n-sdk/dist/index.d.ts` |
 
