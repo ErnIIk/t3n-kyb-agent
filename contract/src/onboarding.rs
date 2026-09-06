@@ -118,10 +118,10 @@ pub fn host_of(url: &str) -> String {
 /// The values themselves are never examined, compared, or returned — only their
 /// absence is.
 ///
-/// - `resolved`   — the endpoint echoed the request and no markers survived
-/// - `unresolved` — markers came back verbatim; the record now holds template
-///                  strings where a name should be, and someone must look
-/// - `unknown`    — the endpoint did not echo, so there is nothing to infer from
+/// - `resolved`: the endpoint echoed the request and no markers survived
+/// - `unresolved`: markers came back verbatim; the record now holds template
+///   strings where a name should be, and someone must look
+/// - `unknown`: the endpoint did not echo, so there is nothing to infer from
 pub fn placeholder_state(body: &[u8]) -> &'static str {
     let text = String::from_utf8_lossy(body);
     if text.contains(MARKER_PREFIX) {
@@ -306,7 +306,8 @@ mod tests {
     #[test]
     fn placeholder_state_reads_absence_not_content() {
         // httpbin-shaped echo, markers substituted by the host.
-        let resolved = br#"{"json":{"source":"t3n-kyb-agent","submitted_by":{"first_name":"Ada"}}}"#;
+        let resolved =
+            br#"{"json":{"source":"t3n-kyb-agent","submitted_by":{"first_name":"Ada"}}}"#;
         assert_eq!(placeholder_state(resolved), "resolved");
 
         // Same echo, but substitution did not happen.
