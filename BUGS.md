@@ -361,6 +361,20 @@ flow, whichever is intended.
 printing both addresses so the cause is visible. That check is the only reason I caught this before
 deploying rather than after.
 
+Then I took the only route the public-agent flow leaves open and claimed the agent's key from a
+**second claim-page account**. That produced a genuinely separate principal, and it is the
+configuration this repository runs on:
+
+```
+user  : did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c   signs the grant
+agent : did:t3n:d7a47645b122ce1151f1f6ecdd40a4ab2de7318d   acts under it
+```
+
+Worth stating plainly, because it is the practical answer to the question this issue raises: today,
+demonstrating delegation on T3N requires two claim-page accounts. Whether that is intended or whether
+the org-agent flow is the supported answer is a decision only your team can make, but one of the two
+should be written down where an agent builder will find it.
+
 ---
 
 ## 11b. Where the answer to "which claim page visit gives what" actually lives
