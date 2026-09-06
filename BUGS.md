@@ -353,6 +353,33 @@ anything is deployed.
 
 ---
 
+## Checked against your own known-pitfalls table
+
+Terminal 3 publishes a skill file for AI coding assistants
+([Using AI Coding Assistants](https://docs.terminal3.io/developers/adk/support/ai-coding-assistants))
+with a twelve-row troubleshooting table. Before submitting this list I went through that table row by
+row, because a bug report that repeats what you already document is noise.
+
+**None of the eleven issues above appears in it.** The table covers runtime symptoms a developer hits
+while following the docs correctly — `type: module`, unexported keys, out-of-scope variables, ACL
+defaults, hex-encoding the tenant id, egress grants. Everything in this report is a different
+category: places where the documentation itself is wrong, absent, or contradicts another page.
+
+Two of the rows are worth pairing with findings above, because they show the docs disagreeing with
+themselves:
+
+| Your skill file says | But a docs page does the opposite |
+|---|---|
+| `tenant not found` → "Always read `tenantDid`/`did.value` from the authenticated session, never construct it" | Agent Auth assigns `await agentClient.authenticate(...)` — the `Did` object, not `.value` — straight into the grant (issue 1) |
+| "Re-registering a contract breaks old pinned-version calls — re-verify any version-pinned calls after any re-registration" | Nothing warns that pinning `versionReq` in an agent grant makes every redeploy silently revoke the agent, which is the same hazard one layer up (this repo's `grant.ts` deliberately omits it) |
+
+The skill file is good, and it is the single most useful page in the ADK docs for anyone starting
+out. It is also doing work the reference pages should not be delegating to it: a developer who never
+finds `/support/ai-coding-assistants` gets none of that guidance. Several rows in that table would
+prevent more damage inline, next to the code they are about.
+
+---
+
 ## Things that worked exactly as documented
 
 Worth saying, since a bug list on its own is a distorted picture:

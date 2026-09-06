@@ -149,6 +149,14 @@ stated. That is the first instruction of every agent build, and it has no proced
 answers fail quietly — reusing the tenant key gives a working handshake and a successful grant, since
 an identity may authorise itself, so the delegation demonstrates nothing while appearing to work.
 
+**All eleven were checked against your own twelve-row known-pitfalls table** in
+[Using AI Coding Assistants](https://docs.terminal3.io/developers/adk/support/ai-coding-assistants),
+and none of them duplicates a row in it. That table covers runtime symptoms hit while following the
+docs correctly; this report covers places where the documentation is wrong, missing, or contradicts
+another page. Two findings are cases of the docs disagreeing with themselves — the skill file says
+"never construct the DID, read `did.value`", while the Agent Auth page passes the `Did` object
+straight into the grant.
+
 The three that cost the most time are all cases where copying the documented code produces something
 that does not work:
 
