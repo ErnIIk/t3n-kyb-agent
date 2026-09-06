@@ -1,0 +1,68 @@
+name: CI
+
+# Everything here runs without T3N credentials on purpose: a contributor who
+# has never claimed a key can still verify the contract compiles, the tests
+# pass, and the grant list still matches the code.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: contract (rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust with the WASI P2 target
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup target add wasm32-wasip2
+          rustup component add clippy rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contract
+
+      - name: Format
+        run: cargo fmt --manifest-path contract/Cargo.toml --check
+
+      - name: Lint
+        run: >
+          cargo clippy --manifest-path contract/Cargo.toml
+          --target x86_64-unknown-linux-gnu --all-targets -- -D warnings
+
+      # Native target: the parsing, scoring and allowlist tests. The allowlist
+      # test is the one that fails a PR which adds an outbound host to the
+      # contract without adding it to the agent grant.
+      - name: Test
+        run: cargo test --manifest-path contract/Cargo.toml --target x86_64-unknown-linux-gnu
+
+      - name: Build WASM component
+        run: cargo build --release --manifest-path contract/Cargo.toml
+
+      - name: Verify the component exports what the agent calls
+        run: |
+          cargo install wasm-tools --locked
+          wasm-tools component wit contract/target/wasm32-wasip2/release/z_tenant_kyb.wasm \
+            | tee component.wit
+          grep -q "export z:tenant-kyb/contracts" component.wit
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: z_tenant_kyb.wasm
+          path: contract/target/wasm32-wasip2/release/z_tenant_kyb.wasm
+
+  client:
+    name: client (typescript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck

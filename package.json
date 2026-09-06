@@ -1,0 +1,27 @@
+{
+  "name": "t3n-kyb-agent",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "A KYB (Know-Your-Business) counterparty verification agent for Terminal 3 — GLEIF and VIES checks inside a TEE contract, with PII-safe supplier onboarding",
+  "license": "MIT",
+  "scripts": {
+    "build:contract": "cargo build --release --manifest-path contract/Cargo.toml",
+    "test:contract": "cargo test --manifest-path contract/Cargo.toml --target x86_64-pc-windows-msvc",
+    "typecheck": "tsc --noEmit",
+    "whoami": "tsx src/whoami.ts",
+    "deploy": "tsx src/deploy.ts",
+    "grant": "tsx src/grant.ts",
+    "kyb": "tsx src/agent.ts",
+    "setup": "npm run build:contract && npm run deploy && npm run grant"
+  },
+  "dependencies": {
+    "@terminal3/t3n-sdk": "^5.10.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}

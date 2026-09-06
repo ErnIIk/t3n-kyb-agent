@@ -1,0 +1,68 @@
+/// z-tenant-kyb — Know-Your-Business (KYB) counterparty verification contract.
+///
+/// Runs inside the T3N confidential-compute enclave and answers one question
+/// an enterprise asks before every new supplier contract:
+/// "is this company real, active, and safe to transact with?"
+///
+/// Imported host capabilities and why each one is needed:
+///   - tenant-context:         tenant DID, used to build the `z:<tid>:*` KV map names
+///   - logging:                audit breadcrumbs (never logs PII)
+///   - kv-store:               reads `secrets` (API keys) and `config` (endpoints)
+///   - http:                   GLEIF + VIES lookups — company data only, carries NO PII
+///   - http-with-placeholders: supplier onboarding submission — the contact person's
+///                             PII is written as `{{profile.<field>}}` markers that the
+///                             host resolves inside the enclave at dispatch time, so
+///                             plaintext PII never enters this WASM module's memory.
+///
+/// Every import here is a capability grant. Nothing else is reachable from this
+/// contract — no filesystem, no clock, no arbitrary sockets.
+package z:tenant-kyb@0.1.0;
+
+world tenant-kyb {
+    import host:tenant/tenant-context@1.0.0;
+    import host:interfaces/logging@2.1.0;
+    import host:interfaces/kv-store@2.1.0;
+    import host:interfaces/http@2.1.0;                    // company data (no PII)
+    import host:interfaces/http-with-placeholders@2.1.0;  // onboarding (PII via placeholders)
+
+    export contracts;
+}
+
+interface contracts {
+    /// Standard 3-field envelope every node-callable contract function receives.
+    /// `input`        — JSON request payload for this function.
+    /// `user-profile` — always None for tenant contracts (hardcoded at dispatch).
+    /// `context`      — node-minted DynamicContext JSON (trusted).
+    record generic-input {
+        input:        option<list<u8>>,
+        user-profile: option<list<u8>>,
+        context:      option<list<u8>>,
+    }
+
+    /// Look up a legal entity in the GLEIF Global LEI Index.
+    /// Input  (JSON): { "lei": "5299..." }  OR  { "legal_name": "Acme GmbH" }
+    /// Output (JSON): { found, lei, legal_name, jurisdiction, entity_status,
+    ///                  registration_status, next_renewal_date, address, candidates }
+    verify-entity: func(req: generic-input) -> result<list<u8>, string>;
+
+    /// Validate an EU VAT number against the European Commission VIES service.
+    /// Input  (JSON): { "country_code": "DE", "vat_number": "811907980" }
+    /// Output (JSON): { valid, country_code, vat_number, name, address, request_date }
+    check-vat: func(req: generic-input) -> result<list<u8>, string>;
+
+    /// Full KYB check: GLEIF + VIES in one invocation, scored into a single verdict.
+    /// Doing both inside one enclave call means the agent sees only the verdict,
+    /// not the intermediate lookups.
+    /// Input  (JSON): { "legal_name", "lei"?, "country_code"?, "vat_number"? }
+    /// Output (JSON): { verdict: "pass"|"review"|"fail", risk_score: 0-100,
+    ///                  checks: [{ name, status, detail }], entity, vat }
+    run-kyb-check: func(req: generic-input) -> result<list<u8>, string>;
+
+    /// Submit the supplier onboarding record to the buyer's procurement system.
+    /// Carries NO contact-person PII as an argument: the contract templates
+    /// `{{profile.<field>}}` markers into the body and the host substitutes the
+    /// calling user's verified profile values inside the enclave.
+    /// Input  (JSON): { "legal_name", "lei"?, "vat_number"?, "verdict", "risk_score" }
+    /// Output (JSON): { submitted, status_code, reference }
+    submit-onboarding: func(req: generic-input) -> result<list<u8>, string>;
+}
