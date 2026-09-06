@@ -341,6 +341,75 @@ mod tests {
         assert_eq!(verdict.verdict, "pass");
     }
 
+    // The two commands the README documents and the weekly smoke test runs.
+    // Captured GLEIF responses stand in for the network; the point is that the
+    // scoring on real registry data still produces the verdicts we promise in
+    // writing. If GLEIF's data changes enough to break a documented demo, these
+    // fail here rather than in front of a reviewer.
+    mod documented_demos {
+        use super::*;
+        use crate::gleif::parse_gleif_response;
+
+        fn vat(valid: bool) -> VatRecord {
+            VatRecord {
+                valid,
+                country_code: "DE".into(),
+                vat_number: "811907980".into(),
+                service_status: "VALID".into(),
+                ..Default::default()
+            }
+        }
+
+        #[test]
+        fn readme_and_smoke_test_command_passes() {
+            const BY_NAME: &[u8] =
+                include_bytes!("../tests/fixtures/gleif_deutsche_bank_by_name.json");
+            let name = "Deutsche Bank Aktiengesellschaft";
+            let entity = parse_gleif_response(BY_NAME, Some(name)).unwrap();
+            let req = KybReq {
+                legal_name: name.into(),
+                lei: None,
+                country_code: Some("DE".into()),
+                vat_number: Some("811907980".into()),
+            };
+
+            let verdict = score(&req, &entity, Some(&vat(true)));
+
+            // .github/workflows/smoke.yml greps for exactly this.
+            assert_eq!(verdict.verdict, "pass");
+            assert_eq!(verdict.risk_score, 0);
+            // The README prints this LEI and address.
+            assert_eq!(entity.lei, "529900IH9V4I3VHQVO92");
+            assert!(entity.address.contains("Paris"));
+        }
+
+        #[test]
+        fn readme_submit_demo_is_not_rejected() {
+            const MULTI: &[u8] = include_bytes!("../tests/fixtures/gleif_acme_multi.json");
+            let name = "Acme GmbH";
+            let entity = parse_gleif_response(MULTI, Some(name)).unwrap();
+            let req = KybReq {
+                legal_name: name.into(),
+                lei: None,
+                country_code: Some("DE".into()),
+                vat_number: Some("811907980".into()),
+            };
+
+            let verdict = score(&req, &entity, Some(&vat(true)));
+
+            // `--submit` refuses on "fail". Before records were ranked this
+            // scored 65 and the documented demo could not file anything.
+            assert_ne!(
+                verdict.verdict, "fail",
+                "the --submit demo would refuse to run"
+            );
+            assert_eq!(entity.legal_name, "Acme United Europe GmbH");
+            // The name still differs from what was asked for, and saying so is
+            // the honest outcome — it just is not a rejection on its own.
+            assert_eq!(verdict.risk_score, 15);
+        }
+    }
+
     #[test]
     fn risk_score_never_exceeds_one_hundred() {
         let worst = EntityRecord {

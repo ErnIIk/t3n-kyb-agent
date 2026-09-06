@@ -33,7 +33,7 @@ touching the agent's process.
 
 ## What is different about this submission
 
-Five things a reviewer will not find in a typical build, each of which exists for a reason rather
+Six things a reviewer will not find in a typical build, each of which exists for a reason rather
 than for decoration:
 
 1. **A test that fails when the permission grant drifts from the code.** Adding an outbound host to
@@ -52,6 +52,13 @@ than for decoration:
 5. **Bugs verified against the SDK's types, not just experienced.** Each entry names the file and
    line in `index.d.ts` that contradicts the documentation — including a probable single root cause:
    the docs were validated against SDK 3.x while npm serves 5.10.0.
+6. **The documented demos are covered by tests.** Both commands in the README are pinned by
+   regression tests against captured live registry responses, so the README, the weekly smoke test
+   and the code cannot drift apart. That check earned its place immediately: it exposed that
+   searching GLEIF for "Acme GmbH" returns a *retired* company first, which scored 65 and made the
+   documented `--submit` demo refuse to run. Records are now ranked — name agreement above liveness
+   above a current registration — and the rows that lose come back as `candidates` so a human can
+   overrule the choice.
 
 ## Why KYB, on this platform specifically
 
@@ -98,7 +105,7 @@ to justify a rejection to the supplier.
 6. `npm run kyb` — a full KYB verdict against live GLEIF and VIES data
 7. `npm run kyb -- --submit` — onboarding filed; the echoed body shows the `{{profile.*}}` markers
    resolved by the host and never by the contract
-8. `npm run test:contract` — 37 tests passing with no credentials configured
+8. `npm run test:contract` — 39 tests passing with no credentials configured
 
 ## Usefulness and ease of maintenance
 
@@ -106,7 +113,7 @@ This was the judging criterion I optimised for, so the specifics rather than adj
 
 - **It runs with no third-party accounts.** GLEIF and VIES are free and keyless. The only credentials
   anyone needs are their own two T3N keys.
-- **37 tests, none of which need credentials.** CI builds the contract, runs the suite and typechecks
+- **39 tests, none of which need credentials.** CI builds the contract, runs the suite and typechecks
   the client on every push, with no secrets configured.
 - **The build fails when the grant drifts from the code.** `contract/tests/allowlist.rs` reads
   `src/session.ts` and fails if a host or function the contract uses is missing from the agent grant.
@@ -200,7 +207,7 @@ I am happy to walk someone through it or answer questions during the transfer.
 > email are resolved inside the enclave and never touch my process.
 >
 > Both registries are public and keyless, so you can clone it and get a real verdict with just your
-> own T3N keys. 37 tests, none of which need credentials.
+> own T3N keys. 39 tests, none of which need credentials.
 >
 > https://github.com/ErnIIk/t3n-kyb-agent
 
