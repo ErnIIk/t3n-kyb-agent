@@ -476,7 +476,54 @@ error names the cause and the flag rather than leaving the reader with "malforme
 
 ---
 
-## Checked against your own known-pitfalls table
+## 13. Nothing says what makes a call "delegated" — and the field that decides it is named after PII
+
+**Severity: high** (a correct grant still fails, and the error points at the grant)
+
+[Outbound HTTP is authorized by the user, not the contract](https://docs.terminal3.io/developers/adk/tips/outbound-http-auth-by-user)
+states the rule precisely:
+
+> **Delegated calls**: Use the subject user's grant
+> **Direct/self calls**: Use the caller's own self-grant
+
+What no page states is **how the node decides which kind of call it is looking at**. The answer is the
+`pii_did` field on the `execute` payload: present, and the call is delegated and evaluated against
+that user's grant; absent, and it is a self-call evaluated against the caller's own.
+
+Nothing in the ADK docs connects that field to authorisation at all. Its only description in the SDK
+is about audit — "the user whose data the call touched (host-stamped `pii_did`)" — and the delegated
+/ self distinction appears in a comment about `AuditEvent`, not in anything a caller reads while
+writing an `execute`. The name completes the trap: `pii_did` reads as "set this when you are sending
+personal data", so the natural implementation sets it on exactly the one function that carries PII —
+which is what I did.
+
+**The symptom is actively misleading.** Every lookup fails with:
+
+```
+host/http.egress_denied: host 'api.gleif.org' not in the authorised_hosts allowlist
+```
+
+The host *is* in the allowlist. The grant naming it was signed seconds earlier and accepted. What
+failed is that the agent, being a separate DID, was checked against a self-grant it never had — so
+the message describes a missing allowlist entry while the real problem is a missing delegation
+marker.
+
+**Why it hides until the last moment:** while the agent and the tenant share a DID — which is what
+the claim page hands you (issue 11) — the agent's self-grant *is* the user's grant, so the omission
+has no effect. Everything works. The failure appears only after you fix the identity model, at which
+point it looks like the fix broke a working system.
+
+**Reproduction:** claim two keys from two accounts, grant the agent a host, and call a contract
+function that makes an outbound request **without** `pii_did`. It fails with `egress_denied` for a
+host that is present in the grant. Add `pii_did: <tenantDid>` and the identical call succeeds.
+
+**Fix:** say it on the outbound-HTTP page, one line under the rule — a call is delegated when the
+`execute` payload carries `pii_did`. Consider an alias (`on_behalf_of`) so the field's name matches
+what it actually controls.
+
+**What I did:** `src/agent.ts` sends `pii_did` on every call the agent makes, not just the one that
+touches PII, with a comment explaining that it selects the authorisation model. The verified run
+below is with two genuinely separate identities.
 
 Terminal 3 publishes a skill file for AI coding assistants
 ([Using AI Coding Assistants](https://docs.terminal3.io/developers/adk/support/ai-coding-assistants))

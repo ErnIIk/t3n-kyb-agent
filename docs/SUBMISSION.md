@@ -10,7 +10,7 @@
 - Contract: `z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts` — contract id **883**,
   Rust compiled to a `wasm32-wasip2` component
 - Agent card (live, hosted by T3N):
-  `https://cn-api.sg.testnet.t3n.terminal3.io/api/agent-card/did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c`
+  `https://cn-api.sg.testnet.t3n.terminal3.io/api/agent-card/did:t3n:d7a47645b122ce1151f1f6ecdd40a4ab2de7318d`
 - Environment: testnet
 
 It answers the question a company asks before signing any new vendor — is this counterparty real,
@@ -48,7 +48,7 @@ Getting there required working around **a platform bug that currently blocks eve
 | Continue running or hand over | answered below | full process in `docs/HANDOVER.md` |
 | Public GitHub repo | done | link above |
 | Screenshots | below | also in `screenshots/` |
-| Bugs faced | **13, reproducible** — 1 critical, 3 high | `BUGS.md` |
+| Bugs faced | **14, reproducible** — 1 critical, 4 high | `BUGS.md` |
 
 ## What is different about this submission
 
@@ -157,7 +157,7 @@ This was the judging criterion I optimised for, so the specifics rather than adj
 
 ## Bugs found
 
-Thirteen issues, each with reproduction steps and the workaround, in
+Fourteen issues, each with reproduction steps and the workaround, in
 [`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md). Two of them are blocking, and
 both were found by actually running against the cluster rather than by reading.
 
@@ -185,7 +185,20 @@ promises. The failure is silent: the grant is written and enforced, yet grantor 
 same DID, so the delegation proves nothing while looking correct. `npm run whoami` compares the two
 DIDs and refuses to continue, which is the only reason this surfaced before deployment.
 
-**All thirteen were checked against your own twelve-row known-pitfalls table** in
+**Issue 13 — high: a correct grant still fails, and the error blames the grant.** The
+outbound-HTTP page says delegated calls use the subject user's grant and self-calls use the caller's
+own. It never says what makes a call delegated. The answer is the `pii_did` field on the `execute`
+payload — a name that reads as "set this when sending personal data", so the obvious implementation
+puts it only on the function that carries PII. Every other call is then treated as a self-call by an
+agent that has no self-grant, and fails with `host/http.egress_denied` naming a host that *is* in the
+allowlist, from a grant signed seconds earlier.
+
+The bug is invisible until the identity model is correct: while the agent shares the tenant's DID
+(issue 11), its self-grant *is* the user's grant, so everything works. Fixing the identities is what
+surfaces it — which makes it look like the fix caused it.
+
+
+**All fourteen were checked against your own twelve-row known-pitfalls table** in
 [Using AI Coding Assistants](https://docs.terminal3.io/developers/adk/support/ai-coding-assistants),
 and none of them duplicates a row in it. That table covers runtime symptoms hit while following the
 docs correctly; this report covers places where the documentation is wrong, missing, or contradicts
@@ -267,7 +280,7 @@ I am happy to walk someone through it or answer questions during the transfer.
 
 Follow-up post:
 
-> Thirteen bugs and docs issues found on the way, each with a reproduction — including no documented
+> Fourteen bugs and docs issues found on the way, each with a reproduction — including no documented
 > way to claim the second key every agent needs, a docs page that hands a `Did` object where a string
 > belongs, and a `cargo test` that cannot run because the reference repo pins the WASM target.
 >

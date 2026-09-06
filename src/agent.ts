@@ -119,10 +119,18 @@ async function main(): Promise<void> {
   console.log(`contract: ${scriptName}@${scriptVersion}`);
   console.log(`supplier: ${args.name}`);
 
+  // pii_did names the user this agent is acting for. Despite the name it does
+  // more than gate PII: it is what makes the call *delegated*. Outbound HTTP is
+  // authorised by the subject user's grant on a delegated call, and by the
+  // caller's own self-grant on a direct one — so without this, a separate agent
+  // identity is checked against a self-grant it does not have, and every lookup
+  // fails with `host/http.egress_denied` even though the user's grant lists the
+  // host. See BUGS.md #13.
   const verdict = await agent.client.executeAndDecode<KybVerdict>({
     contract_id: scriptName,
     contract_version: scriptVersion,
     function_name: "run-kyb-check",
+    pii_did: tenantDid,
     input: {
       legal_name: args.name,
       ...(args.lei ? { lei: args.lei } : {}),
@@ -146,9 +154,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  // pii_did names the user this agent is acting for — the subject whose profile
-  // the host reads when it resolves the {{profile.*}} markers. Only this
-  // function needs it; the lookups above touch no personal data.
+  // Here pii_did carries its documented meaning as well: it is the subject
+  // whose profile the host reads when resolving the {{profile.*}} markers.
   const submission = await agent.client.executeAndDecode<OnboardingResp>({
     contract_id: scriptName,
     contract_version: scriptVersion,
