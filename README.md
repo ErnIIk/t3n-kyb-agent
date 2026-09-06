@@ -24,6 +24,18 @@ checks  :
   [PASS] vat_valid               — DE811907980 registered
 ```
 
+## Verify it without an account
+
+The whole build can be checked before you claim a single key — no T3N account, no third-party
+signup, nothing to configure:
+
+```bash
+npm ci && npm run test:contract && npm run build:contract && npm run typecheck
+```
+
+That compiles the TEE contract to a WASM component, runs 33 tests, and typechecks the client. The
+same four commands are what CI runs on every push.
+
 ## Why this, on this platform
 
 KYB is a good fit for a confidential-compute platform for a specific reason: the *company* data is
