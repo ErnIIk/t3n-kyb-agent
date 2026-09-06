@@ -172,20 +172,25 @@ the docs and the SDK's JSDoc, the `common-errors` page matched the real error st
 
 ## Running it after the challenge
 
-<!-- Pick one before submitting and delete the other. -->
+**I would like to hand it over to Terminal 3 to maintain.**
 
-**Option A — I would like to keep running it,** and I am interested in the startup program and the
-listing page. The repository is public, CI is green without credentials, the weekly smoke test covers
-the live path, and the maintenance guide is written for someone other than me.
+The full process is in
+[`docs/HANDOVER.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/docs/HANDOVER.md). In short:
+transfer the repository, claim two keys, `npm run setup`, `npm run register-card`, verify with one
+command, and add three repository secrets to switch on the weekly smoke test. About 20 minutes, most
+of it a Rust build.
 
-**Option B — happy to hand it over.** The full process is in
-[`docs/HANDOVER.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/docs/HANDOVER.md): transfer the
-repo, claim two keys, `npm run setup`, `npm run register-card`, verify with one command, add three
-repository secrets to enable the weekly smoke test. About 20 minutes, most of it a Rust build.
+What makes it that short is what you are not inheriting: there is no hosted service, no database, no
+cron host, no paid dependency, and nothing tied to my identity — the tenant DID simply follows
+whichever key runs the deploy, and both data sources are public and keyless. The maintenance guide is
+written for a stranger rather than for me, and `docs/HANDOVER.md` includes an honest table of the
+ongoing load: an SDK major bump is the one thing likely to need real attention, which is why every
+handshake and `execute` call goes through a single file.
 
-There is no hosted service, no database, no cron host, no paid dependency, and nothing tied to my
-identity — the tenant DID follows whichever key runs the deploy. That is what makes the handover
-short, and those are the same design choices the "ease of maintenance" criterion asks for.
+Until the handover completes, the agent stays deployed on testnet and I will keep it running — the
+weekly smoke test means a break is visible rather than discovered later.
+
+I am happy to walk someone through it or answer questions during the transfer.
 
 ## Social post (bonus)
 

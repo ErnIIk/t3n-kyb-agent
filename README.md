@@ -195,7 +195,8 @@ This was built to be handed over, so the things that rot are documented rather t
   separate job so you can tell upstream problems from T3N ones. Without secrets configured it skips
   and passes, so a fork never fails a run it cannot pass.
 
-Taking it over is a 20-minute process, written out in [docs/HANDOVER.md](docs/HANDOVER.md).
+This agent is offered to Terminal 3 to maintain; taking it over is a 20-minute process, written out
+in [docs/HANDOVER.md](docs/HANDOVER.md).
 [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) maps every documented Quickstart and Walkthrough step to
 the file that performs it.
 

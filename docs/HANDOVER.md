@@ -1,8 +1,11 @@
 # Handover
 
 The bounty asks whether the author wants to keep running the agent or hand it to Terminal 3, and for
-the handover process either way. This page is that process, written so it can be executed by someone
-who has never spoken to the author.
+the handover process either way.
+
+**The intent is to hand this over to Terminal 3 to maintain.** This page is that process, written so
+it can be executed by someone who has never spoken to the author. Until the transfer happens, the
+agent stays deployed on testnet and the author keeps it running.
 
 ## What a new owner actually receives
 
@@ -77,8 +80,8 @@ The realistic risk is the SDK: the docs were validated against 3.x while npm ser
 (see BUGS.md #9), so an auth change is the most likely thing to need attention. That is why every
 `execute` call and every handshake goes through `session.ts` rather than being spread across scripts.
 
-## If the author keeps running it instead
+## Before the transfer
 
-The same setup already applies — the repository is public, CI is green without credentials, the
-smoke test covers the live path, and this document exists. Continuing to run it does not depend on
-the author's availability, which is the property that makes it worth continuing to run.
+Nothing has to happen for the agent to keep working in the meantime: it is deployed on testnet, the
+weekly smoke test reports whether it still works, and CI stays green without credentials. The author
+is available to walk someone through the steps above or to answer questions during the transfer.
