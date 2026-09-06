@@ -4,8 +4,7 @@
  * This file deliberately duplicates logic that `session.ts` already wraps. It
  * exists for two reasons:
  *
- * 1. The bounty asks contributors to complete the Quickstart and Walkthrough.
- *    This is that Quickstart, following
+ * 1. It is the documented Quickstart, kept runnable on its own, following
  *    https://docs.terminal3.io/developers/adk/get-started/quickstart
  *    plus the TenantClient step from "Set Up Development Environment", so the
  *    documented flow can be run and shown on its own.

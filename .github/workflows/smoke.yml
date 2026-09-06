@@ -1,7 +1,6 @@
 name: Weekly live smoke test
 
-# The bounty asks for an agent that keeps running after the challenge. An agent
-# nobody exercises is an agent that quietly stops working — the SDK moves, a
+# An agent nobody exercises is an agent that quietly stops working — the SDK moves, a
 # registry changes its response shape, a testnet contract gets superseded, and
 # nobody notices until someone tries a demo.
 #

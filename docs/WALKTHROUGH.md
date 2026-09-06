@@ -1,8 +1,8 @@
 # Quickstart and Walkthrough: what was completed, and where it lives
 
-The bounty asks contributors to obtain a DID and API key and complete the Quickstart and Walkthrough
-in the docs. This page maps each documented step to the file in this repository that performs it, so
-a reviewer can check the requirement without reading the whole codebase.
+The T3 ADK documentation has a Quickstart and a five-step Walkthrough. This page maps each documented
+step to the file in this repository that performs it, so a reader can follow the platform's own path
+through this codebase without reading all of it.
 
 Every step below was run against testnet. Screenshots are in [`screenshots/`](../screenshots).
 

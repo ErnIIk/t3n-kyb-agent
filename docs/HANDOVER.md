@@ -1,8 +1,5 @@
 # Handover
 
-The bounty asks whether the author wants to keep running the agent or hand it to Terminal 3, and for
-the handover process either way.
-
 **The intent is to hand this over to Terminal 3 to maintain.** This page is that process, written so
 it can be executed by someone who has never spoken to the author. Until the transfer happens, the
 agent stays deployed on testnet and the author keeps it running.

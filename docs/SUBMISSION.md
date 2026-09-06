@@ -1,7 +1,5 @@
 # Superteam submission: Terminal 3 / T3N trusted agent bounty
 
-> Draft for the public Google Doc. Paste as-is and add the screenshots where marked.
-
 ## What I built
 
 **t3n-kyb-agent** is a supplier due-diligence (KYB) agent on the T3 Agent Developer Kit.
