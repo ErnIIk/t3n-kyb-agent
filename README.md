@@ -90,6 +90,10 @@ justify a rejection to the supplier:
 `< 20` passes, `20–49` goes to human review, `>= 50` is rejected. The whole table is covered by
 unit tests.
 
+`--submit` refuses outright on `fail`. A `review` verdict is still filed, carrying its score and its
+`checks` array, because the procurement system is where a human signs off — the agent's job is to
+narrow that decision, not to make it.
+
 ### Picking the right company out of a name search
 
 A name search rarely returns one row. Searching GLEIF for "Acme GmbH" today returns a **retired**
