@@ -24,8 +24,9 @@ checks  :
   [PASS] vat_valid — DE811907980 registered
 ```
 
-The LEI, address and renewal date above are the live values GLEIF returns today; the two DIDs are
-shortened.
+That is a real run, copied verbatim: the LEI, address and renewal date are what GLEIF returns today,
+and the two DIDs are the live testnet identities — the agent is a separate principal from the tenant
+that owns the contract, which is the whole point of the delegation model.
 
 ## Verify it without an account
 
