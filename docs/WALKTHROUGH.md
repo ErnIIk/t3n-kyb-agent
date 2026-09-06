@@ -4,7 +4,7 @@ The T3 ADK documentation has a Quickstart and a five-step Walkthrough. This page
 step to the file in this repository that performs it, so a reader can follow the platform's own path
 through this codebase without reading all of it.
 
-Every step below was run against testnet. Screenshots are in [`screenshots/`](../screenshots).
+Every step below was run against testnet, against contract id 887.
 
 ## Quickstart
 
@@ -13,7 +13,7 @@ Every step below was run against testnet. Screenshots are in [`screenshots/`](..
 | 1. Get your API key | `.env` (gitignored), template in `.env.example` | — |
 | 2. Set up your project | `package.json`, `tsconfig.json` | `npm run typecheck` |
 | 3. Connect and authenticate | [`src/quickstart.ts`](../src/quickstart.ts) | `npm run quickstart` |
-| 4. Run it | `npm run quickstart` prints `Connected as: did:t3n:…` | Screenshot 1 |
+| 4. Run it | `npm run quickstart` prints `Connected as: did:t3n:…` | run it yourself |
 | Set Up Dev Env (TenantClient) | same file, `tenant.tenant.me()` | prints `TenantClient ready.` |
 
 `src/quickstart.ts` follows the documented flow directly rather than reusing this project's
@@ -26,8 +26,8 @@ which is also the smallest reproduction for the auth issues in [`BUGS.md`](../BU
 |---|---|---|
 | 1. Write your TEE contract | [`contract/src/`](../contract/src), world in [`contract/wit/world.wit`](../contract/wit/world.wit) | `cargo test` — 42 tests |
 | 2. Build your TEE contract | `npm run build:contract` | `wasm-tools component wit` in CI |
-| 3. Register your TEE contract | [`src/deploy.ts`](../src/deploy.ts) | Screenshot 2 |
-| 4. Invoke your TEE contract | [`src/agent.ts`](../src/agent.ts) | Screenshot 4 |
+| 3. Register your TEE contract | [`src/deploy.ts`](../src/deploy.ts) | `npm run deploy` prints the contract id |
+| 4. Invoke your TEE contract | [`src/agent.ts`](../src/agent.ts) | `npm run kyb -- --name …` |
 | 5. Test your TEE contract | `contract/src/**/tests`, [`contract/tests/allowlist.rs`](../contract/tests/allowlist.rs) | `npm run test:contract` |
 
 Supporting pages that turned out to be required rather than optional:
