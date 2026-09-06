@@ -52,8 +52,21 @@ against a captured fixture.
 | Contract → anything else | the WIT import list | it does not compile |
 
 That last row is the one that makes the rest credible. A WASI P2 component can only call what its
-world imports, so `wit/world.wit` is a complete and auditable statement of this contract's reach:
-five host interfaces, no filesystem, no sockets, no clock.
+world imports, so the built artifact is an auditable statement of this contract's reach. Verify it
+rather than taking this file's word for it:
+
+```bash
+wasm-tools component wit contract/target/wasm32-wasip2/release/z_tenant_kyb.wasm
+```
+
+Five host interfaces (`tenant-context`, `logging`, `kv-store`, `http`, `http-with-placeholders`),
+**no `wasi:filesystem` and no `wasi:sockets`**. Outbound traffic has exactly two paths, both gated by
+the user's grant.
+
+The listing also shows `wasi:io`, `wasi:cli` (stdio, environment, exit) and
+`wasi:clocks/monotonic-clock`. Those come from the Rust standard library rather than from this
+contract, and none of them reaches anything the host does not already mediate. They are in the
+component all the same, so a flat claim of "no clock" would be wrong.
 
 ## Data flow of one `--submit` run
 

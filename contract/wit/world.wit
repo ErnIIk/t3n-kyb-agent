@@ -15,7 +15,12 @@
 ///                             plaintext PII never enters this WASM module's memory.
 ///
 /// Every import here is a capability grant. Nothing else is reachable from this
-/// contract — no filesystem, no clock, no arbitrary sockets.
+/// contract: no filesystem, and no sockets of its own. Outbound traffic has
+/// exactly two paths, `http` and `http-with-placeholders`, and both are gated
+/// by the calling user's grant. (The Rust standard library also pulls in the
+/// usual WASI stdio, environment and monotonic-clock imports; those carry no
+/// authority the host does not already mediate. Check the real list with
+/// `wasm-tools component wit` on the built artifact.)
 package z:tenant-kyb@0.1.0;
 
 world tenant-kyb {
