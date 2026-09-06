@@ -7,13 +7,32 @@
 **t3n-kyb-agent** — a supplier due-diligence (KYB) agent on the T3 Agent Developer Kit.
 
 - Repository: `https://github.com/ErnIIk/t3n-kyb-agent` *(public)*
-- Contract: `z:<tenant>:kyb-contracts` — Rust, compiled to a `wasm32-wasip2` component
-- Agent card: `<node>/api/agent-card/<agent-did>` *(published, hosted by T3N)*
+- Contract: `z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts` — contract id **883**,
+  Rust compiled to a `wasm32-wasip2` component
+- Agent card (live, hosted by T3N):
+  `https://cn-api.sg.testnet.t3n.terminal3.io/api/agent-card/did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c`
 - Environment: testnet
 
 It answers the question a company asks before signing any new vendor — is this counterparty real,
 active, and safe to pay? — and files the onboarding record without the buyer's contact details ever
 touching the agent's process.
+
+**It is deployed and working.** A live run against the cluster returns a scored verdict from real
+GLEIF and VIES data and files the onboarding record with the contact person's details resolved inside
+the enclave:
+
+```
+verdict : PASS (risk 0/100)
+entity  : Deutsche Bank Aktiengesellschaft — LEI 529900IH9V4I3VHQVO92
+address : 23-25, avenue Franklin Delano Roosevelt, 75008, Paris, FR
+  [PASS] gleif_entity_found · entity_active · lei_registration_current · name_match · vat_valid
+other matches: DEUTSCHE BANK AKTIENGESELLSCHAFT; Deutsche Vermögensberatung Bank Aktiengesellschaft
+
+onboarding submitted to httpbin.org: HTTP 200
+```
+
+Getting there required working around **a platform bug that currently blocks every new SDK install**
+— see issue 12 below.
 
 ## Scope checklist
 
@@ -29,7 +48,7 @@ touching the agent's process.
 | Continue running or hand over | answered below | full process in `docs/HANDOVER.md` |
 | Public GitHub repo | done | link above |
 | Screenshots | below | also in `screenshots/` |
-| Bugs faced | 10, reproducible | `BUGS.md` |
+| Bugs faced | **13, reproducible** — 1 critical, 3 high | `BUGS.md` |
 
 ## What is different about this submission
 
@@ -138,24 +157,35 @@ This was the judging criterion I optimised for, so the specifics rather than adj
 
 ## Bugs found
 
-Eleven issues, each with reproduction steps and the workaround, in
-[`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md).
+Thirteen issues, each with reproduction steps and the workaround, in
+[`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md). Two of them are blocking, and
+both were found by actually running against the cluster rather than by reading.
 
-The one I would fix first costs one sentence. **How the agent gets its own key is documented on
-exactly one page — the one about organisation-owned agents.** Agent Auth tells you to get the
-agent a key "from the same claim page you used for your own"; that page documents a single sign-in
-issuing a single key and warns it "is shown once… there's no way to view it again". Read in the
-order the docs present them, the conclusion is that keys are one per account. The real answer —
-"issues a fresh key together with metered test credits every time you visit" — appears only on
-[Register an Organization-owned Agent](https://docs.terminal3.io/developers/agents/provision-org-agent),
-which the public-agent walkthrough never links to.
+**Issue 12 — critical: nothing can connect to testnet with the current SDK.** The first network call
+in the Quickstart, `fetchTrustedManifest("testnet")`, throws `Trust manifest … is malformed`. The
+endpoint is healthy (HTTP 200, signed 2026-08-27); it simply omits `rtmr1_allowlist`, which SDK 5.10
+declares mandatory in `SignedTrustManifest` and `TrustAnchor` ("**Must be non-empty**"). Switching
+environment does not help — `NODE_URLS` maps `sandbox` and `testnet` to the same host, so the claim
+page's own `setEnvironment("sandbox")` sample hits the identical failure. The only way through is
+`{ unsafe_trust_server: true }`, which disables DKG attestation — the guarantee the platform exists to
+provide. Every submission this round is presumably hitting this.
 
-It is worth fixing despite its size because both wrong answers fail quietly: reusing the tenant key
-gives a working handshake and a successful grant, since an identity may authorise itself, so the
-delegation demonstrates nothing while appearing to work — and that is the one property the platform
-exists to provide.
+**Issue 11 — high: the claim page cannot give an agent its own identity.** Agent Auth says the agent
+needs "its **own** DID and its **own** test credits — from the same claim page". I claimed a second
+key exactly that way and measured the result:
 
-**All eleven were checked against your own twelve-row known-pitfalls table** in
+```
+tenant : 0x718f4160d845145a7de1f52ead6dd5e08a9009e7 → did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c
+agent  : 0x1693fde558fbb3bdff8410d86420f661e8e942cd → did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c
+```
+
+Two keypairs, one principal. A repeat visit binds another wallet to the signed-in account's existing
+DID — consistent with `eth_authenticator_limit` ("wallet limit per DID"), but not what Agent Auth
+promises. The failure is silent: the grant is written and enforced, yet grantor and grantee are the
+same DID, so the delegation proves nothing while looking correct. `npm run whoami` compares the two
+DIDs and refuses to continue, which is the only reason this surfaced before deployment.
+
+**All thirteen were checked against your own twelve-row known-pitfalls table** in
 [Using AI Coding Assistants](https://docs.terminal3.io/developers/adk/support/ai-coding-assistants),
 and none of them duplicates a row in it. That table covers runtime symptoms hit while following the
 docs correctly; this report covers places where the documentation is wrong, missing, or contradicts
@@ -237,7 +267,7 @@ I am happy to walk someone through it or answer questions during the transfer.
 
 Follow-up post:
 
-> Eleven bugs and docs issues found on the way, each with a reproduction — including no documented
+> Thirteen bugs and docs issues found on the way, each with a reproduction — including no documented
 > way to claim the second key every agent needs, a docs page that hands a `Did` object where a string
 > belongs, and a `cargo test` that cannot run because the reference repo pins the WASM target.
 >
