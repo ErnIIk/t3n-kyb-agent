@@ -142,6 +142,10 @@ Prerequisites: Node 20+, Rust with `wasm32-wasip2`, and **two** keys from the
 — one for you, one for the agent. They are separate identities with separate credits; reusing one
 key for both defeats the delegation model this repository exists to demonstrate.
 
+Visit the claim page twice: each visit issues a fresh key with its own credits. That fact is
+documented only on the org-agent page, while the claim page says the key "is shown once… no way to
+view it again", which reads as one key per account — see [BUGS.md](BUGS.md) #11.
+
 ```bash
 git clone https://github.com/ErnIIk/t3n-kyb-agent && cd t3n-kyb-agent
 npm install

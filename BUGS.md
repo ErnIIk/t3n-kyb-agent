@@ -317,39 +317,58 @@ case.
 
 ---
 
-## 11. Nothing explains how to claim the *second* key, which every agent needs
+## 11. How to get the agent's key is documented on exactly one page — the wrong one
 
-**Severity: high** (blocks the exact task this challenge is about, at the first step)
+**Severity: medium** (the answer exists; no reading path an agent builder takes reaches it)
 
-[Agent Auth](https://docs.terminal3.io/developers/adk/overview/agent-auth-adk) is unambiguous that
-the agent is a separate identity with separate funding:
+Every agent needs a second identity with its own credits.
+[Agent Auth](https://docs.terminal3.io/developers/adk/overview/agent-auth-adk) says so and points at
+the claim page:
 
 > "Get it a key from the same claim page you used for your own; it comes with credits attached."
 
-The [claim page](https://docs.terminal3.io/developers/adk/get-started/prerequisites/request-test-tokens)
-describes a single flow: sign in with a work email, and "your developer key appears immediately"
-along with a DID and test credits. It never says whether returning to that page issues a *new* key
-or re-displays the same identity, whether a second key needs a second email, or what the limit per
-account is.
+Follow that link and the answer is not there. The
+[claim page](https://docs.terminal3.io/developers/adk/get-started/prerequisites/request-test-tokens)
+documents one sign-in producing one key, and warns:
 
-So the first instruction of every agent build — get the agent its own key — has no documented
-procedure. The failure mode is quiet, too: reusing the tenant key produces a working handshake and a
-successful `agent-auth-update`, because an identity is allowed to authorise itself. Everything looks
-fine until you realise the delegation demonstrates nothing, since the grantor and grantee are the
-same DID. The alternative failure, generating a keypair locally, authenticates correctly and then
-fails at the first invocation with `InsufficientCreditError`, which reads like a billing problem
-rather than "this identity was never claimed".
+> "Your key is shown **once**. Copy it somewhere safe before you navigate away — there's no way to
+> view it again."
 
-**Reproduction:** follow the Quickstart, then follow Agent Auth. At the line above, there is nowhere
-to go.
+Read those two pages in the order the docs put them, and the reasonable conclusion is that a key is
+issued per account and cannot be reissued — so the second identity must come from somewhere else.
 
-**Fix:** one paragraph on the claim page — whether signing in again issues a fresh key, and if not,
-how to request an agent identity. Given that the same page already has an optional campaign-code
-field, an "I need a key for an agent" path would fit naturally beside it.
+The actual answer is one sentence on
+[Register an Organization-owned Agent](https://docs.terminal3.io/developers/agents/provision-org-agent):
+
+> "issues a fresh key together with metered test credits **every time you visit**"
+
+That is the whole solution: revisit the claim page. But it lives on a page about *organisation*
+agents — a different ownership model, reached from a different section — and the walkthrough path
+(Quickstart → Agent Auth → Register a Public Agent) never links to it. Someone building a public
+agent, which is what the ADK walkthrough teaches, has no reason to open it.
+
+The sandbox landing page hints at the same fact from a third direction, advertising "20,000 test
+credits — enough for **25 agents**" and "25 did:t3n verifiable agent identities", without saying how
+one developer obtains 25 identities.
+
+**Reproduction:** follow Quickstart, then Agent Auth, then click through to the claim page. Nothing
+on that path states that returning issues a new key; the "shown once, no way to view it again"
+warning actively suggests the opposite.
+
+**Why it is worth fixing despite being one sentence:** both wrong answers fail quietly. Reusing the
+tenant key produces a working handshake and a successful `agent-auth-update`, because an identity may
+authorise itself — the delegation then demonstrates nothing while appearing to work, and that is the
+one property the platform exists to provide. Generating a keypair locally authenticates fine and
+fails later with `InsufficientCreditError`, which reads as a billing problem rather than "this
+identity was never claimed".
+
+**Fix:** put the sentence where it is needed — on the claim page ("visiting again issues a fresh key
+and credits; that is how you fund an agent identity") and inline in Agent Auth, which currently sends
+the reader to a page that does not answer the question it raises.
 
 **What I did:** `npm run whoami` authenticates both keys, prints both DIDs, and exits non-zero with
-an explanation if they are the same identity — so the silent-reuse failure becomes a loud one before
-anything is deployed.
+an explanation when they resolve to the same identity — so the silent-reuse failure becomes a loud
+one before anything is deployed.
 
 ---
 

@@ -141,13 +141,19 @@ This was the judging criterion I optimised for, so the specifics rather than adj
 Eleven issues, each with reproduction steps and the workaround, in
 [`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md).
 
-The one I would fix first is not a code bug at all. **Nothing documents how to claim the second
-key** — the one the agent needs. Agent Auth says to get it "from the same claim page you used for
-your own", and that page only describes a single sign-in that issues one key. Whether returning
-issues a fresh key, whether a second email is needed, what the per-account limit is: none of it is
-stated. That is the first instruction of every agent build, and it has no procedure. Worse, the wrong
-answers fail quietly — reusing the tenant key gives a working handshake and a successful grant, since
-an identity may authorise itself, so the delegation demonstrates nothing while appearing to work.
+The one I would fix first costs one sentence. **How the agent gets its own key is documented on
+exactly one page — the one about organisation-owned agents.** Agent Auth tells you to get the
+agent a key "from the same claim page you used for your own"; that page documents a single sign-in
+issuing a single key and warns it "is shown once… there's no way to view it again". Read in the
+order the docs present them, the conclusion is that keys are one per account. The real answer —
+"issues a fresh key together with metered test credits every time you visit" — appears only on
+[Register an Organization-owned Agent](https://docs.terminal3.io/developers/agents/provision-org-agent),
+which the public-agent walkthrough never links to.
+
+It is worth fixing despite its size because both wrong answers fail quietly: reusing the tenant key
+gives a working handshake and a successful grant, since an identity may authorise itself, so the
+delegation demonstrates nothing while appearing to work — and that is the one property the platform
+exists to provide.
 
 **All eleven were checked against your own twelve-row known-pitfalls table** in
 [Using AI Coding Assistants](https://docs.terminal3.io/developers/adk/support/ai-coding-assistants),
