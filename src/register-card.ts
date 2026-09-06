@@ -20,7 +20,7 @@ import {
   CONTRACT_TAIL,
   canonicalName,
   openAgentSession,
-  requireEnv,
+  requireTenantDid,
 } from "./session.js";
 
 /** Cards are validated at publish time: non-empty, valid JSON, <= 16 KiB. */
@@ -113,7 +113,7 @@ function buildCard(agentDid: string, tenantDid: string): string {
 }
 
 async function main(): Promise<void> {
-  const tenantDid = requireEnv("T3N_TENANT_DID");
+  const tenantDid = requireTenantDid();
   const agent = await openAgentSession();
   console.log(`agent   : ${agent.did}`);
 

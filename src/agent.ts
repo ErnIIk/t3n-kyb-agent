@@ -13,7 +13,7 @@ import {
   CONTRACT_TAIL,
   canonicalName,
   openAgentSession,
-  requireEnv,
+  requireTenantDid,
   resolveContractVersion,
 } from "./session.js";
 
@@ -108,7 +108,7 @@ function printVerdict(verdict: KybVerdict): void {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  const tenantDid = requireEnv("T3N_TENANT_DID");
+  const tenantDid = requireTenantDid();
   const scriptName = canonicalName(tenantDid, CONTRACT_TAIL);
 
   const agent = await openAgentSession();

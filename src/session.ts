@@ -50,6 +50,52 @@ export function requireEnv(name: string): string {
   return value.trim();
 }
 
+/** A secp256k1 private key as the claim page hands it over. */
+const PRIVATE_KEY_SHAPE = /^0x[0-9a-fA-F]{64}$/;
+
+/**
+ * Reads a key and checks it is shaped like one before the SDK tries to sign
+ * with it.
+ *
+ * Leaving the `0x` placeholder in `.env` is the single most likely first-run
+ * mistake, and the SDK's own message for it — "Invalid Ethereum private key" —
+ * describes the symptom rather than the cause. This says which variable, and
+ * what to do about it.
+ */
+export function requirePrivateKey(name: string): string {
+  const value = requireEnv(name);
+  if (!PRIVATE_KEY_SHAPE.test(value)) {
+    const detail =
+      value === "0x"
+        ? "it is still the placeholder from .env.example"
+        : `expected 0x followed by 64 hex characters, got ${value.length} characters`;
+    throw new Error(
+      `${name} does not look like a private key: ${detail}.\n` +
+        `  Paste the key from the claim page into .env with no quotes and no spaces:\n` +
+        `  ${name}=0x<64 hex characters>\n` +
+        `  Claim page: https://docs.terminal3.io/developers/adk/get-started/prerequisites/request-test-tokens`,
+    );
+  }
+  return value;
+}
+
+/**
+ * Reads the tenant DID, rejecting the unfilled placeholder.
+ *
+ * `did:t3n:` on its own passes a non-empty check and then fails much later as a
+ * contract name that resolves to nothing.
+ */
+export function requireTenantDid(): string {
+  const value = requireEnv("T3N_TENANT_DID");
+  if (!/^did:t3n:.+/.test(value)) {
+    throw new Error(
+      `T3N_TENANT_DID is not a DID: ${value}\n` +
+        `  Run "npm run quickstart" and copy the printed did:t3n:... into .env`,
+    );
+  }
+  return value;
+}
+
 export interface Session {
   /** Authenticated low-level client. */
   client: T3nClient;
@@ -90,7 +136,7 @@ export async function openSession(privateKey: string): Promise<Session> {
 
 /** Authenticates the tenant (contract owner) identity. */
 export async function openTenantSession(): Promise<Session & { tenant: TenantClient }> {
-  const session = await openSession(requireEnv("T3N_API_KEY"));
+  const session = await openSession(requirePrivateKey("T3N_API_KEY"));
   const tenant = new TenantClient({
     t3n: session.client,
     baseUrl: getNodeUrl(),
@@ -101,7 +147,7 @@ export async function openTenantSession(): Promise<Session & { tenant: TenantCli
 
 /** Authenticates the agent identity, which has its own key and its own credits. */
 export async function openAgentSession(): Promise<Session> {
-  return openSession(requireEnv("T3N_AGENT_KEY"));
+  return openSession(requirePrivateKey("T3N_AGENT_KEY"));
 }
 
 /** `z:<tid>:<tail>` — the canonical name of anything this tenant owns. */
