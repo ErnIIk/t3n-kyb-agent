@@ -12,6 +12,7 @@ import {
   TenantClient,
   createEthAuthInput,
   type Environment,
+  type TrustAnchorOrUnsafe,
   eth_get_address,
   fetchTrustedManifest,
   getContractVersion,
@@ -96,6 +97,45 @@ export function requireTenantDid(): string {
   return value;
 }
 
+/**
+ * Resolves the trust anchor that pins the node's attestation.
+ *
+ * Normally this is the signed manifest the cluster publishes. As of 2026-09-06
+ * the testnet manifest is missing `rtmr1_allowlist`, which SDK 5.10 requires,
+ * so `fetchTrustedManifest` rejects it as malformed and no client can connect
+ * at all (BUGS.md #12).
+ *
+ * `T3N_UNSAFE_TRUST=1` falls back to the SDK's documented escape hatch. It is
+ * opt-in, never the default, and prints a warning every time, because it skips
+ * the DKG attestation check — the guarantee that the enclave running your
+ * contract is the one you think it is. Acceptable to demo against a broken
+ * testnet; not acceptable to leave on.
+ */
+async function resolveTrustAnchor(): Promise<TrustAnchorOrUnsafe> {
+  if (process.env.T3N_UNSAFE_TRUST === "1") {
+    console.warn(
+      "WARNING: T3N_UNSAFE_TRUST=1 — skipping node attestation verification.\n" +
+        "  This is a workaround for the malformed testnet trust manifest (BUGS.md #12).\n" +
+        "  Never set this against production.",
+    );
+    return { unsafe_trust_server: true };
+  }
+
+  try {
+    return await fetchTrustedManifest(T3N_ENV);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/malformed/i.test(message)) {
+      throw new Error(
+        `${message}\n` +
+          `  The cluster's manifest is missing a field this SDK requires — see BUGS.md #12.\n` +
+          `  To carry on against testnet anyway: set T3N_UNSAFE_TRUST=1 (skips attestation).`,
+      );
+    }
+    throw error;
+  }
+}
+
 export interface Session {
   /** Authenticated low-level client. */
   client: T3nClient;
@@ -119,7 +159,7 @@ export async function openSession(privateKey: string): Promise<Session> {
   const address = eth_get_address(privateKey);
 
   const client = new T3nClient({
-    trustAnchor: await fetchTrustedManifest(T3N_ENV),
+    trustAnchor: await resolveTrustAnchor(),
     wasmComponent,
     handlers: {
       EthSign: metamask_sign(address, undefined, privateKey),

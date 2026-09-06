@@ -39,8 +39,18 @@ if (!T3N_API_KEY) {
 const wasmComponent = await loadWasmComponent(); // all crypto runs inside the WASM component
 const address = eth_get_address(T3N_API_KEY);
 
+// The documented line is exactly this:
+//   trustAnchor: await fetchTrustedManifest("testnet"),
+// It currently throws, because the testnet manifest omits `rtmr1_allowlist`
+// and SDK 5.10 requires it (BUGS.md #12). The try/catch keeps the documented
+// call as the default and only falls back when explicitly asked to.
+const trustAnchor =
+  process.env.T3N_UNSAFE_TRUST === "1"
+    ? ({ unsafe_trust_server: true } as const)
+    : await fetchTrustedManifest("testnet"); // pins the node's attestation
+
 const t3n = new T3nClient({
-  trustAnchor: await fetchTrustedManifest("testnet"), // pins the node's attestation
+  trustAnchor,
   wasmComponent,
   handlers: {
     EthSign: metamask_sign(address, undefined, T3N_API_KEY),

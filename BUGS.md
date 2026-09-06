@@ -317,9 +317,55 @@ case.
 
 ---
 
-## 11. How to get the agent's key is documented on exactly one page — the wrong one
+## 11. The claim page cannot give an agent its own identity, which is what the docs send you there for
 
-**Severity: medium** (the answer exists; no reading path an agent builder takes reaches it)
+**Severity: high** (verified against the live cluster; the documented instruction does not work)
+
+**Confirmed empirically.** I claimed a second key exactly as instructed — same browser, same Google
+account, second visit — and got a genuinely different key. It resolved to the *same* DID:
+
+```
+tenant DID : did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c
+  address  : 0x718f4160d845145a7de1f52ead6dd5e08a9009e7
+agent DID  : did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c
+  address  : 0x1693fde558fbb3bdff8410d86420f661e8e942cd
+```
+
+Two distinct keypairs, two distinct Ethereum addresses, one identity. That is consistent with the
+platform's own model — `common-errors` documents `eth_authenticator_limit` as "exceeded wallet limit
+per DID (e.g. attempting 11th wallet)", so a DID is *designed* to hold many wallets — but it means a
+fresh key from the claim page is a new **authenticator**, not a new **principal**.
+
+Agent Auth asks for the latter:
+
+> "An agent needs its **own** DID and its **own** test credits — separate from yours, and from the
+> same claim page you used in Step 1"
+
+Those two sentences cannot both hold. The claim page keys off the signed-in account, so every visit
+binds another wallet to the same DID. Getting a second principal requires a different account
+entirely, or the org-agent path (`createOrganisation` → `createAgent`, which mints an agent DID and
+returns an opaque API key) — a different authentication model that the public-agent walkthrough never
+mentions.
+
+The consequence is quiet and total: the grant is written, accepted, and enforced, but grantor and
+grantee are the same DID, so the delegation demonstrates nothing. Everything looks correct.
+
+**Reproduction:** claim a key, claim a second one from the same account, authenticate with each, and
+compare the DIDs.
+
+**Fix:** say on the claim page that a repeat visit adds a wallet to your existing DID, and state in
+Agent Auth how to actually obtain a separate agent principal — a second account, or the org-agent
+flow, whichever is intended.
+
+**What I did:** `npm run whoami` authenticates both keys and exits non-zero when the DIDs match,
+printing both addresses so the cause is visible. That check is the only reason I caught this before
+deploying rather than after.
+
+---
+
+## 11b. Where the answer to "which claim page visit gives what" actually lives
+
+**Severity: medium** (documentation routing)
 
 Every agent needs a second identity with its own credits.
 [Agent Auth](https://docs.terminal3.io/developers/adk/overview/agent-auth-adk) says so and points at
@@ -337,38 +383,96 @@ documents one sign-in producing one key, and warns:
 Read those two pages in the order the docs put them, and the reasonable conclusion is that a key is
 issued per account and cannot be reissued — so the second identity must come from somewhere else.
 
-The actual answer is one sentence on
+The only page that describes the claim page's repeat behaviour at all is
 [Register an Organization-owned Agent](https://docs.terminal3.io/developers/agents/provision-org-agent):
 
 > "issues a fresh key together with metered test credits **every time you visit**"
 
-That is the whole solution: revisit the claim page. But it lives on a page about *organisation*
-agents — a different ownership model, reached from a different section — and the walkthrough path
-(Quickstart → Agent Auth → Register a Public Agent) never links to it. Someone building a public
-agent, which is what the ADK walkthrough teaches, has no reason to open it.
+That sentence is true and still misleads, for the reason measured in issue 11: a fresh *key* is not a
+fresh *identity*. Read while looking for an agent principal, it reads like the solution — I followed
+it, and it is why my first version of this report claimed the procedure was undocumented rather than
+unworkable.
 
-The sandbox landing page hints at the same fact from a third direction, advertising "20,000 test
-credits — enough for **25 agents**" and "25 did:t3n verifiable agent identities", without saying how
-one developer obtains 25 identities.
+It is also on the wrong page. The public-agent path (Quickstart → Agent Auth → Register a Public
+Agent) never links to the organisation section, so the one sentence describing the claim page's
+behaviour lives where a public-agent builder has no reason to look.
+
+The sandbox landing page adds a third partial view, advertising "20,000 test credits — enough for
+**25 agents**" and "25 did:t3n verifiable agent identities", without saying how one developer obtains
+25 identities — which, per issue 11, repeat claim-page visits do not provide.
 
 **Reproduction:** follow Quickstart, then Agent Auth, then click through to the claim page. Nothing
-on that path states that returning issues a new key; the "shown once, no way to view it again"
-warning actively suggests the opposite.
+on that path explains what a second visit does; the "shown once, no way to view it again" warning
+suggests the opposite of what happens.
 
-**Why it is worth fixing despite being one sentence:** both wrong answers fail quietly. Reusing the
-tenant key produces a working handshake and a successful `agent-auth-update`, because an identity may
-authorise itself — the delegation then demonstrates nothing while appearing to work, and that is the
-one property the platform exists to provide. Generating a keypair locally authenticates fine and
-fails later with `InsufficientCreditError`, which reads as a billing problem rather than "this
-identity was never claimed".
+**Fix:** state it once on the claim page itself — a repeat visit issues a new wallet on your existing
+DID, and here is how to obtain a separate agent principal. That single addition resolves both this
+issue and issue 11.
 
-**Fix:** put the sentence where it is needed — on the claim page ("visiting again issues a fresh key
-and credits; that is how you fund an agent identity") and inline in Agent Auth, which currently sends
-the reader to a page that does not answer the question it raises.
+---
 
-**What I did:** `npm run whoami` authenticates both keys, prints both DIDs, and exits non-zero with
-an explanation when they resolve to the same identity — so the silent-reuse failure becomes a loud
-one before anything is deployed.
+## 12. The testnet trust manifest is missing a field SDK 5.10 requires — nothing can connect
+
+**Severity: critical** (every current SDK install fails at the first line of the Quickstart)
+
+`fetchTrustedManifest("testnet")` — step 3 of the Quickstart, the first network call any project
+makes — throws:
+
+```
+Error: Trust manifest at https://cn-api.sg.testnet.t3n.terminal3.io/api/trust-manifest is malformed.
+    at fetchTrustedManifest (.../@terminal3/t3n-sdk/dist/index.esm.js:2:413646)
+```
+
+The endpoint itself is healthy — HTTP 200, valid JSON, signed 2026-08-27:
+
+```json
+{
+  "cluster": "testnet",
+  "version": 1787800421,
+  "peer_ids": ["QmPk4AtbFore74fJoP4CoS9Q96TvRvoQWR4VmkYtkBLmwz", "…"],
+  "rtmr3_allowlist": ["+XO6nLsfqnTkX0VcNk9AaXAu79ErxURODtjuGOIF8Sk7OQYq3PVVsMG8jzDEeNJQ"],
+  "signed_at": "2026-08-27T03:13:41Z",
+  "signature": "387384a9…"
+}
+```
+
+What it lacks is `rtmr1_allowlist`. SDK 5.10 declares it mandatory:
+
+```typescript
+// index.d.ts:5807 — SignedTrustManifest
+/** Base64-encoded 48-byte RTMR1 measurements of the expected image(s). */
+rtmr1_allowlist: string[];
+
+// index.d.ts:665 — TrustAnchor
+// "Base64-encoded 48-byte RTMR1 measurements … **Must be non-empty.**
+//  the real rootfs-integrity signal"
+```
+
+So the cluster publishes a pre-RTMR1 manifest while the published SDK requires RTMR1. Switching
+environment does not help: `NODE_URLS` maps **both** `testnet` and `sandbox` to the same host
+(`https://cn-api.sg.testnet.t3n.terminal3.io`), so the claim page's own sample code —
+`setEnvironment("sandbox")` — hits the identical broken manifest.
+
+**Reproduction:** `npm install @terminal3/t3n-sdk`, then run the Quickstart verbatim. It fails before
+authenticating. `curl https://cn-api.sg.testnet.t3n.terminal3.io/api/trust-manifest` shows the
+missing field.
+
+**Impact:** this is the first call in the documented flow, so nobody starting today gets past it.
+The only way through is `{ unsafe_trust_server: true }` — the SDK's own escape hatch, which skips DKG
+attestation verification. That is precisely the guarantee the platform sells, so the workaround
+disables the product's core property in order to use it.
+
+**Aggravating detail:** the failure prints the SDK's obfuscated bundle to the terminal — 1.6 MB of
+minified source before the one line that matters. The actual message is recoverable only with
+`awk 'length < 200'`.
+
+**Fix:** publish `rtmr1_allowlist` on the testnet manifest, or have `fetchTrustedManifest` degrade
+explicitly ("this cluster predates RTMR1; RTMR3-only verification will be used") instead of rejecting
+the manifest as malformed.
+
+**What I did:** `src/session.ts` keeps manifest verification as the default and treats
+`T3N_UNSAFE_TRUST=1` as an explicit, warned-on-every-run opt-out. When the manifest is rejected, the
+error names the cause and the flag rather than leaving the reader with "malformed".
 
 ---
 
