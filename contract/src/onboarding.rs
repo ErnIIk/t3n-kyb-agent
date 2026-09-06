@@ -136,9 +136,17 @@ fn submit_wasm(req: OnboardingReq) -> Result<OnboardingResp, String> {
 
     let submitted = (200..300).contains(&response.code);
     if !submitted {
-        let body = String::from_utf8_lossy(&response.payload);
+        // Deliberately no response body here, unlike the GLEIF and VIES paths.
+        //
+        // This is the one request whose body the host filled with the user's
+        // real name and email, and a rejecting endpoint commonly echoes the
+        // request back — httpbin, the default endpoint, echoes it always. Any
+        // of that body in this error would carry plaintext PII out of the
+        // enclave, into the agent's stderr, and into the smoke test's uploaded
+        // run log. The status code is what a caller can act on anyway.
         return Err(format!(
-            "onboarding submission rejected by {host}: HTTP {} — {body}",
+            "onboarding submission rejected by {host}: HTTP {}. Response body withheld: \
+             it may echo the request, which carries the submitter's resolved PII.",
             response.code
         ));
     }
@@ -242,5 +250,37 @@ mod tests {
         assert_eq!(extract_reference(br#"{"id":"abc"}"#), "abc");
         assert_eq!(extract_reference(br#"{"json":{}}"#), "");
         assert_eq!(extract_reference(b"not json"), "");
+    }
+
+    /// The response body is the one place plaintext PII can re-enter the
+    /// enclave: the host filled the request with the submitter's real name and
+    /// email, and an echoing endpoint hands it straight back. httpbin, the
+    /// default endpoint, echoes on every call.
+    ///
+    /// Only an opaque reference id may be lifted out of that body. Nothing else
+    /// from it may reach a return value, an error string, or a log line.
+    #[test]
+    fn nothing_personal_is_lifted_out_of_an_echoing_response() {
+        let echoed = br#"{
+            "json": {
+                "supplier": {"legal_name": "Acme GmbH"},
+                "submitted_by": {
+                    "first_name": "Ada",
+                    "last_name": "Lovelace",
+                    "email": "ada@example.com"
+                }
+            },
+            "headers": {"Host": "httpbin.org"},
+            "id": "SUP-42"
+        }"#;
+
+        let reference = extract_reference(echoed);
+        assert_eq!(reference, "SUP-42");
+        for leaked in ["Ada", "Lovelace", "ada@example.com"] {
+            assert!(
+                !reference.contains(leaked),
+                "reference must not carry {leaked} out of the enclave"
+            );
+        }
     }
 }
