@@ -82,11 +82,33 @@ Caused by:
 
 Same failure on Linux (`Exec format error`).
 
-**Fix:** either mention the target override on the testing page, or drop `[build] target` from the
-reference repo in favour of passing `--target wasm32-wasip2` in the documented build command.
+There is a second-order trap behind this one, which cost me a further round: `.cargo/config.toml` is
+resolved from the **current working directory**, not from `--manifest-path`. So the same crate builds
+differently depending on where you stand:
 
-**What I did:** the test script pins the host triple explicitly —
-`cargo test --manifest-path contract/Cargo.toml --target x86_64-pc-windows-msvc`.
+```bash
+cd contract && cargo build --release          # wasm32-wasip2 — config applies
+cargo build --release --manifest-path contract/Cargo.toml   # HOST target — no .wasm produced
+```
+
+The second command finishes with `Finished release profile`, having quietly built a native `.rlib`
+and no component at all. Any npm script or CI step that builds from the repo root hits this, and the
+failure only appears one step later as a missing `.wasm` file.
+
+**Fix:** either mention the target override on the testing page, or drop `[build] target` from the
+reference repo in favour of passing `--target wasm32-wasip2` in the documented build command. The
+latter is more robust, since it does not depend on where cargo is invoked from.
+
+**What I did:** every script runs from the repo root, where the contract's cargo config does not
+apply, and states the target explicitly when it needs one:
+
+```jsonc
+"build:contract": "cargo build --release --manifest-path contract/Cargo.toml --target wasm32-wasip2",
+"test:contract":  "cargo test  --manifest-path contract/Cargo.toml",  // host default
+```
+
+This also keeps the test script portable — an earlier version pinned
+`x86_64-pc-windows-msvc`, which would have failed for any reviewer on macOS or Linux.
 
 ---
 

@@ -81,7 +81,7 @@ curl -H "Accept: application/vnd.api+json" \
 curl "https://ec.europa.eu/taxation_customs/vies/rest-api/ms/DE/vat/811907980" \
   -o contract/tests/fixtures/vies_valid.json
 
-cargo test --manifest-path contract/Cargo.toml --target x86_64-unknown-linux-gnu
+npm run test:contract
 ```
 
 If a test fails after a refresh, that is the point: the parser is out of date with reality.
@@ -91,10 +91,14 @@ If a test fails after a refresh, that is the point: the parser is out of date wi
 Everything except the live calls works offline, which is what CI does:
 
 ```bash
-cargo test --manifest-path contract/Cargo.toml --target <your-host-triple>
-cargo build --release --manifest-path contract/Cargo.toml
+npm run test:contract     # host target — 33 tests
+npm run build:contract    # wasm32-wasip2 component
 npm run typecheck
 ```
+
+Run these from the repo root. `contract/.cargo/config.toml` pins the WASM target and is resolved from
+the current directory rather than from `--manifest-path`, so running cargo from inside `contract/`
+changes what you get — see BUGS.md #2.
 
 ## Cost and quota notes
 

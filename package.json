@@ -6,8 +6,8 @@
   "description": "A KYB (Know-Your-Business) counterparty verification agent for Terminal 3 — GLEIF and VIES checks inside a TEE contract, with PII-safe supplier onboarding",
   "license": "MIT",
   "scripts": {
-    "build:contract": "cargo build --release --manifest-path contract/Cargo.toml",
-    "test:contract": "cargo test --manifest-path contract/Cargo.toml --target x86_64-pc-windows-msvc",
+    "build:contract": "cargo build --release --manifest-path contract/Cargo.toml --target wasm32-wasip2",
+    "test:contract": "cargo test --manifest-path contract/Cargo.toml",
     "typecheck": "tsc --noEmit",
     "quickstart": "tsx src/quickstart.ts",
     "whoami": "tsx src/whoami.ts",

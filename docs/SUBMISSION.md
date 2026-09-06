@@ -32,6 +32,28 @@ touching the agent's process.
 | Screenshots | below | also in `screenshots/` |
 | Bugs faced | 10, reproducible | `BUGS.md` |
 
+## What is different about this submission
+
+Five things a reviewer will not find in a typical build, each of which exists for a reason rather
+than for decoration:
+
+1. **A test that fails when the permission grant drifts from the code.** Adding an outbound host to
+   the contract without adding it to the agent grant is invisible until runtime, where it surfaces as
+   `host/http.egress_denied` — usually during a demo. `contract/tests/allowlist.rs` reads the
+   TypeScript grant and fails the build instead.
+2. **CI that builds both targets, because native tests are not enough.** Host-calling code is behind
+   `cfg(target_arch = "wasm32")`. Mid-build, a removed import left 33 native tests green while the
+   enclave path no longer compiled. That is now a CI failure, not a surprise at deploy time.
+3. **A weekly live smoke test.** The agent runs against testnet every Monday and fails loudly when it
+   breaks, with upstream registries checked in a separate job so an outage at GLEIF is
+   distinguishable from a problem at Terminal 3. "Running post challenge" as a workflow, not a promise.
+4. **An agent card generated from the grant's own constants.** The documented flow produces a
+   hand-maintained JSON file that drifts; here the card cannot advertise a skill the agent was never
+   authorised to perform.
+5. **Bugs verified against the SDK's types, not just experienced.** Each entry names the file and
+   line in `index.d.ts` that contradicts the documentation — including a probable single root cause:
+   the docs were validated against SDK 3.x while npm serves 5.10.0.
+
 ## Why KYB, on this platform specifically
 
 Terminal 3's own use-case page lists **B2B procurement** as a target for delegated agents. KYB fits
@@ -164,6 +186,27 @@ repository secrets to enable the weekly smoke test. About 20 minutes, most of it
 There is no hosted service, no database, no cron host, no paid dependency, and nothing tied to my
 identity — the tenant DID follows whichever key runs the deploy. That is what makes the handover
 short, and those are the same design choices the "ease of maintenance" criterion asks for.
+
+## Social post (bonus)
+
+> Built a KYB agent on @terminal3io's ADK.
+>
+> It checks a supplier against the GLEIF LEI index and EU VIES inside a TEE contract, scores a
+> pass/review/fail verdict, then files the onboarding record — while the contact person's name and
+> email are resolved inside the enclave and never touch my process.
+>
+> Both registries are public and keyless, so you can clone it and get a real verdict with just your
+> own T3N keys. 33 tests, none of which need credentials.
+>
+> https://github.com/ErnIIk/t3n-kyb-agent
+
+Follow-up post:
+
+> Ten bugs and docs issues found on the way, each with a reproduction — including a docs page that
+> hands a `Did` object where a string belongs, a `cargo test` that cannot run because the reference
+> repo pins the WASM target, and a missing `contract_version` the server rejects outright.
+>
+> Probable root cause: the docs were validated against SDK 3.x, npm serves 5.10.0.
 
 ## Links
 

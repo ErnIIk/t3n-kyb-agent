@@ -29,19 +29,24 @@ jobs:
       - name: Format
         run: cargo fmt --manifest-path contract/Cargo.toml --check
 
+      # Run from the repo root so contract/.cargo/config.toml does not apply and
+      # these default to the host target. That file only takes effect when cargo
+      # is invoked from inside contract/, which is exactly the difference that
+      # makes `cargo test` fail there (BUGS.md #2).
       - name: Lint
-        run: >
-          cargo clippy --manifest-path contract/Cargo.toml
-          --target x86_64-unknown-linux-gnu --all-targets -- -D warnings
+        run: cargo clippy --manifest-path contract/Cargo.toml --all-targets -- -D warnings
 
-      # Native target: the parsing, scoring and allowlist tests. The allowlist
-      # test is the one that fails a PR which adds an outbound host to the
-      # contract without adding it to the agent grant.
+      # Host target: the parsing, scoring and allowlist tests. The allowlist test
+      # is the one that fails a PR which adds an outbound host to the contract
+      # without adding it to the agent grant.
       - name: Test
-        run: cargo test --manifest-path contract/Cargo.toml --target x86_64-unknown-linux-gnu
+        run: cargo test --manifest-path contract/Cargo.toml
 
+      # --target is explicit here for the same reason: from the root, the
+      # contract's cargo config is not read, and without this cargo would build
+      # a native library and no .wasm at all.
       - name: Build WASM component
-        run: cargo build --release --manifest-path contract/Cargo.toml
+        run: cargo build --release --manifest-path contract/Cargo.toml --target wasm32-wasip2
 
       - name: Verify the component exports what the agent calls
         run: |
