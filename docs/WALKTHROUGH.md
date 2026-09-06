@@ -1,4 +1,4 @@
-# Quickstart and Walkthrough — what was completed, and where it lives
+# Quickstart and Walkthrough: what was completed, and where it lives
 
 The bounty asks contributors to obtain a DID and API key and complete the Quickstart and Walkthrough
 in the docs. This page maps each documented step to the file in this repository that performs it, so
@@ -34,10 +34,10 @@ Supporting pages that turned out to be required rather than optional:
 
 | Doc page | Where it lives |
 |---|---|
-| Create Tenant KV Maps | `src/deploy.ts` — creates `secrets` and `config` with explicit `readers` |
-| Seed API key into secrets map | `src/deploy.ts` — `maps.entrySet`, see BUGS.md #6 |
-| Agent Auth | [`src/grant.ts`](../src/grant.ts) — the user's signed `agent-auth-update` |
-| Register a Public Agent | [`src/register-card.ts`](../src/register-card.ts) — via SDK, see BUGS.md #10 |
+| Create Tenant KV Maps | `src/deploy.ts`, creates `secrets` and `config` with explicit `readers` |
+| Seed API key into secrets map | `src/deploy.ts`, `maps.entrySet`, see BUGS.md #6 |
+| Agent Auth | [`src/grant.ts`](../src/grant.ts), the user's signed `agent-auth-update` |
+| Register a Public Agent | [`src/register-card.ts`](../src/register-card.ts), via SDK, see BUGS.md #10 |
 | Placeholders in outbound calls | [`contract/src/onboarding.rs`](../contract/src/onboarding.rs) |
 | Common errors | mapped to actionable hints in `src/agent.ts` and `src/deploy.ts` |
 
@@ -59,7 +59,7 @@ npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 8119
 npm run kyb -- --name "Acme GmbH" --country DE --vat 811907980 --submit
 ```
 
-Steps that need no credentials at all — useful for checking the build without claiming a key:
+Steps that need no credentials at all, useful for checking the build without claiming a key:
 
 ```bash
 npm run test:contract

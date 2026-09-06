@@ -19,12 +19,12 @@
 
 Three identities appear in that picture and they are deliberately distinct:
 
-- **tenant** — owns the namespace `z:<tid>:`, registers the contract, creates KV maps. Deploy-time
+- **tenant** owns the namespace `z:<tid>:`, registers the contract, creates KV maps. Deploy-time
   authority only; it never calls the contract in normal operation.
-- **user** — the data owner, whose profile holds the PII and whose signature creates the grant. In
+- **user** is the data owner, whose profile holds the PII and whose signature creates the grant. In
   this repository the tenant key doubles as the user for demo simplicity; in a real deployment the
   user is an employee signing from their own device.
-- **agent** — has its own key, its own DID and its own credits. Holds no authority of its own; the
+- **agent** has its own key, its own DID and its own credits. Holds no authority of its own; the
   grant is the entire source of what it can do.
 
 ## Why the contract has four functions rather than one
@@ -32,7 +32,7 @@ Three identities appear in that picture and they are deliberately distinct:
 `run-kyb-check` is the function the agent actually calls. `verify-entity` and `check-vat` exist as
 separate exports because:
 
-1. They are independently useful — a procurement system that already knows a supplier's LEI wants
+1. They are independently useful: a procurement system that already knows a supplier's LEI wants
    only the VAT refresh, and paying for the full check would be waste.
 2. The grant is per-function. A read-only integration can be granted `verify-entity` and
    `check-vat` while being denied `submit-onboarding`, which is the one function that touches PII
@@ -85,7 +85,7 @@ where PII goes should require the user's signature again.
 
 **Native tests cover parsing and scoring; the WASM build covers the rest.** Host-calling code only
 compiles under `cfg(target_arch = "wasm32")`, so native tests cannot reach it. CI therefore does
-both — `cargo test` on the host triple *and* `cargo build` for `wasm32-wasip2`. Skipping the second
+both, `cargo test` on the host triple *and* `cargo build` for `wasm32-wasip2`. Skipping the second
 one lets a broken enclave path pass a green test run; that happened once while building this and is
 why the CI job is shaped this way.
 
@@ -93,8 +93,8 @@ why the CI job is shaped this way.
 `Acme International GmbH` above an active `Acme United Europe GmbH` for the query "Acme GmbH".
 Reading `data[0]` would therefore fail a live supplier on the strength of a different company's dead
 registration. `rank_record` scores name agreement above liveness, and the passed-over rows are
-returned as `candidates` rather than discarded — the agent should narrow a human's work, not hide the
-alternatives from them.
+returned as `candidates` rather than discarded, because the agent should narrow a human's work
+rather than hide the alternatives from them.
 
 **The grant list is asserted by a test.** `contract/tests/allowlist.rs` reads `src/session.ts` and
 fails if a host or function used by the contract is missing from the grant. Cross-language coupling

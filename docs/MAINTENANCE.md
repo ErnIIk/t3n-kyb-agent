@@ -1,6 +1,6 @@
 # Maintenance
 
-Written for whoever runs this after the person who built it has moved on — including the
+Written for whoever runs this after the person who built it has moved on, including the
 possibility that it is handed over to the Terminal 3 team.
 
 ## The five-minute model
@@ -37,16 +37,16 @@ ONBOARDING_HOST=erp.example.com \
 ```
 
 The URL is read from the `config` KV map at call time, so no rebuild is needed. The host **must**
-be in the grant as well, which is why `grant` is re-run — otherwise the first submission fails with
+be in the grant as well, which is why `grant` is re-run. Otherwise the first submission fails with
 `host/http.egress_denied`.
 
 ### Add a new data source
 
 Three edits, in this order:
 
-1. `contract/src/<source>.rs` — the lookup, plus a `pub const <SOURCE>_HOST`.
-2. `contract/src/kyb.rs` — how the result affects the score, with a `Check` entry explaining it.
-3. `src/session.ts` — add the host to `ALLOWED_HOSTS`, and any new function to `CONTRACT_FUNCTIONS`.
+1. `contract/src/<source>.rs`: the lookup, plus a `pub const <SOURCE>_HOST`.
+2. `contract/src/kyb.rs`: how the result affects the score, with a `Check` entry explaining it.
+3. `src/session.ts`: add the host to `ALLOWED_HOSTS`, and any new function to `CONTRACT_FUNCTIONS`.
 
 If you forget step 3, `cargo test` fails with a message naming the missing host. That test exists
 because this specific mistake is invisible until runtime, where it appears as `egress_denied` in
@@ -56,8 +56,8 @@ front of whoever you were demonstrating to.
 
 Claim a new key, replace it in `.env`, re-run `npm run whoami`. Rotating the **agent** key changes
 the agent's DID, so `npm run grant` must be re-run; the old DID's grant should be considered stale.
-Rotating the **tenant** key changes the tenant DID, which changes the `z:<tid>:` namespace — that is
-a new deployment, not a rotation.
+Rotating the **tenant** key changes the tenant DID, which changes the `z:<tid>:` namespace, which is
+a new deployment rather than a rotation.
 
 ## What breaks on its own
 
@@ -65,7 +65,7 @@ a new deployment, not a rotation.
 |---|---|---|---|
 | GLEIF response shape | GLEIF versions its JSON:API | `parses_a_real_gleif_payload` fails | Update `parse_gleif_response` and refresh the fixture |
 | VIES field naming | The GET and POST endpoints already disagree (`isValid` vs `valid`) | `parse_vies_response` returns an error rather than a silent `false` | Both spellings are already accepted; add a third if one appears |
-| VIES availability | Member-state systems go down; VIES answers `MS_UNAVAILABLE` | `service_status` in the response | Retry later — the contract reports it rather than scoring it as invalid |
+| VIES availability | Member-state systems go down; VIES answers `MS_UNAVAILABLE` | `service_status` in the response | Retry later; the contract reports it rather than scoring it as invalid |
 | SDK auth flow | The T3N SDK is pre-1.0 and moving | `npm run whoami` fails at handshake | All auth lives in `src/session.ts`; it is the only file to change |
 | Contract version collision | Someone redeployed without bumping | `deploy` prints the bump instruction | Bump `contract/Cargo.toml` |
 
@@ -98,7 +98,7 @@ npm run typecheck
 
 Run these from the repo root. `contract/.cargo/config.toml` pins the WASM target and is resolved from
 the current directory rather than from `--manifest-path`, so running cargo from inside `contract/`
-changes what you get — see BUGS.md #2.
+changes what you get; see BUGS.md #2.
 
 ## Cost and quota notes
 
@@ -112,10 +112,10 @@ changes what you get — see BUGS.md #2.
 
 The parts most likely to need your attention, in order:
 
-1. `src/session.ts` — the only place that touches T3N auth. An SDK change lands here.
-2. `contract/src/kyb.rs` — the scoring table. Different companies have different risk appetites;
+1. `src/session.ts`: the only place that touches T3N auth. An SDK change lands here.
+2. `contract/src/kyb.rs`: the scoring table. Different companies have different risk appetites;
    this is the file they will want to edit.
-3. `contract/src/onboarding.rs` — the shape of the record you file. Every procurement system wants
+3. `contract/src/onboarding.rs`: the shape of the record you file. Every procurement system wants
    a different JSON body.
 
 Nothing else should need routine edits.

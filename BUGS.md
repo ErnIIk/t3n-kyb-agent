@@ -8,7 +8,7 @@ Ordered by how much time they cost.
 
 ---
 
-## 1. `agent-auth-adk` uses the DID object where a string is required — copy-paste produces a broken grant
+## 1. `agent-auth-adk` uses the DID object where a string is required, and copy-paste produces a broken grant
 
 **Severity: high** (the copied code runs, then the grant silently does not match the agent)
 
@@ -34,11 +34,11 @@ interface Did { readonly value: string; toString(): string; }
 ```
 
 So `agentDid` is an object, and the grant is written against a serialised object rather than the
-`did:t3n:...` string. Two neighbouring pages get this right —
+`did:t3n:...` string. Two neighbouring pages get this right:
 [Quickstart](https://docs.terminal3.io/developers/adk/get-started/quickstart) does
 `const tenantDid = did.value;` and
 [Invoke your TEE contract](https://docs.terminal3.io/developers/adk/get-started/walkthrough/invoke-contract)
-does `const agentDid = agentAuth.value;` — so the Agent Auth page is the odd one out.
+does `const agentDid = agentAuth.value;`, so the Agent Auth page is the odd one out.
 
 **Fix:** make the Agent Auth page read `const agentDid = (await agentClient.authenticate(...)).value;`
 
@@ -97,7 +97,7 @@ failure only appears one step later as a missing `.wasm` file.
 
 **Fix:** either mention the target override on the testing page, or drop `[build] target` from the
 reference repo in favour of passing `--target wasm32-wasip2` in the documented build command. The
-latter is more robust, since it does not depend on where cargo is invoked from.
+latter is safer, since it does not depend on where cargo is invoked from.
 
 **What I did:** every script runs from the repo root, where the contract's cargo config does not
 apply, and states the target explicitly when it needs one:
@@ -107,7 +107,7 @@ apply, and states the target explicitly when it needs one:
 "test:contract":  "cargo test  --manifest-path contract/Cargo.toml",  // host default
 ```
 
-This also keeps the test script portable — an earlier version pinned
+This also keeps the test script portable. An earlier version pinned
 `x86_64-pc-windows-msvc`, which would have failed for any reviewer on macOS or Linux.
 
 ---
@@ -143,7 +143,7 @@ deliberate difference.
 
 There is a second gap behind it: neither page says where `userContractVersion` comes from. The
 answer is `getContractVersion(rpcUrl, contractId)`, which is exported from the SDK but appears in no
-documentation page — and a literal `"latest"` cannot be used, because the server parses the field as
+documentation page, and a literal `"latest"` cannot be used, because the server parses the field as
 SemVer.
 
 **Fix:** add `contract_version` to the invoke-contract example, and document `getContractVersion` as
@@ -178,7 +178,7 @@ z-tenant-flight/wit/deps/host-outbox-1.0.0/package.wit
 z-tenant-flight/wit/deps/host-tenant-1.0.0/package.wit
 ```
 
-**Fix:** publish the host WIT packages somewhere versioned and link it from the WIT page — or say
+**Fix:** publish the host WIT packages somewhere versioned and link it from the WIT page, or say
 plainly on the write-contract page that `wit/deps/` must be copied from `z-tenant-flight`.
 
 **What I did:** copied `wit/deps/` from the reference repo. It is vendored in this repository so a
@@ -186,7 +186,7 @@ clone builds without a second checkout.
 
 ---
 
-## 5. `T3N_API_KEY` is not an API key — it is a secp256k1 private key
+## 5. `T3N_API_KEY` is not an API key but a secp256k1 private key
 
 **Severity: medium** (a naming problem with a security consequence)
 
@@ -199,7 +199,7 @@ export T3N_API_KEY="0x<private_key>"
 ```
 
 It is a signing key: `metamask_sign(address, undefined, T3N_API_KEY)` signs the SIWE challenge with
-it. Calling it an "API key" invites the handling an API key usually gets — pasted into a shared
+it. Calling it an "API key" invites the handling an API key usually gets: pasted into a shared
 `.env`, a CI variable, a Slack message, a support ticket. Anyone holding it can authenticate as
 that identity outright.
 
@@ -208,7 +208,7 @@ that it is a private key, not a bearer token.
 
 **Related, same page:** the claim step gives you one key, but every agent needs its own key with its
 own credits. That only becomes clear several pages later, at `register-agent` step 2. Saying it on
-the claim page would save a round trip — and an `InsufficientCreditError` that reads like a billing
+the claim page would save a round trip, and with it an `InsufficientCreditError` that reads like a billing
 problem rather than "you used the wrong identity".
 
 ---
@@ -250,8 +250,8 @@ also avoids the `map_name` / `tail` confusion that the "canonical map name inval
 `/t3n/use-cases/delegate-access-to-agent#payroll`. A developer arriving from the ADK walkthrough
 looking for a worked enterprise example finds a redirect instead.
 
-The destination page is good — it has Enterprise, **B2B Procurement**, Payroll and Individual
-sections — which makes the stub more of a shame. Inlining even a short summary with a link would
+The destination page is good: it has Enterprise, **B2B Procurement**, Payroll and Individual
+sections, which makes the stub more of a shame. Inlining even a short summary with a link would
 keep the ADK reading path intact.
 
 ---
@@ -281,7 +281,7 @@ by hackathon projects are `3.5.2`, `3.9.0` and `3.11.0`, and adds:
 
 Meanwhile `npm install @terminal3/t3n-sdk` today installs **5.10.0**. That is two majors ahead of
 anything the docs were validated against, which is a plausible single cause for issues 1, 3 and 6 in
-this list — the `Did` return shape, the missing `contract_version`, and `executeControl` being shown
+this list: the `Did` return shape, the missing `contract_version`, and `executeControl` being shown
 where a typed `maps.entrySet` now exists.
 
 **Fix:** state the SDK version each documentation page was verified against, even approximately. A
@@ -295,7 +295,7 @@ pages read as current.
 **Severity: low** (a CLI-only story for something the SDK does properly)
 
 [Register a Public Agent](https://docs.terminal3.io/developers/agents/register-agent) documents card
-registration entirely as CLI steps — `t3n agent create-card`, `t3n agent host-card`, and a `curl` to
+registration entirely as CLI steps: `t3n agent create-card`, `t3n agent host-card`, and a `curl` to
 verify. The SDK exposes the same surface programmatically:
 
 ```typescript
@@ -321,8 +321,8 @@ case.
 
 **Severity: high** (verified against the live cluster; the documented instruction does not work)
 
-**Confirmed empirically.** I claimed a second key exactly as instructed — same browser, same Google
-account, second visit — and got a genuinely different key. It resolved to the *same* DID:
+**Confirmed empirically.** I claimed a second key exactly as instructed (same browser, same Google
+account, second visit) and got a genuinely different key. It resolved to the *same* DID:
 
 ```
 tenant DID : did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c
@@ -332,8 +332,8 @@ agent DID  : did:t3n:947e9ba8705790c014d7242cdc67624c5d9b642c
 ```
 
 Two distinct keypairs, two distinct Ethereum addresses, one identity. That is consistent with the
-platform's own model — `common-errors` documents `eth_authenticator_limit` as "exceeded wallet limit
-per DID (e.g. attempting 11th wallet)", so a DID is *designed* to hold many wallets — but it means a
+platform's own model: `common-errors` documents `eth_authenticator_limit` as "exceeded wallet limit
+per DID (e.g. attempting 11th wallet)", so a DID is *designed* to hold many wallets. But it means a
 fresh key from the claim page is a new **authenticator**, not a new **principal**.
 
 Agent Auth asks for the latter:
@@ -344,7 +344,7 @@ Agent Auth asks for the latter:
 Those two sentences cannot both hold. The claim page keys off the signed-in account, so every visit
 binds another wallet to the same DID. Getting a second principal requires a different account
 entirely, or the org-agent path (`createOrganisation` → `createAgent`, which mints an agent DID and
-returns an opaque API key) — a different authentication model that the public-agent walkthrough never
+returns an opaque API key), a different authentication model that the public-agent walkthrough never
 mentions.
 
 The consequence is quiet and total: the grant is written, accepted, and enforced, but grantor and
@@ -354,7 +354,7 @@ grantee are the same DID, so the delegation demonstrates nothing. Everything loo
 compare the DIDs.
 
 **Fix:** say on the claim page that a repeat visit adds a wallet to your existing DID, and state in
-Agent Auth how to actually obtain a separate agent principal — a second account, or the org-agent
+Agent Auth how to actually obtain a separate agent principal: a second account, or the org-agent
 flow, whichever is intended.
 
 **What I did:** `npm run whoami` authenticates both keys and exits non-zero when the DIDs match,
@@ -381,7 +381,7 @@ documents one sign-in producing one key, and warns:
 > view it again."
 
 Read those two pages in the order the docs put them, and the reasonable conclusion is that a key is
-issued per account and cannot be reissued — so the second identity must come from somewhere else.
+issued per account and cannot be reissued, so the second identity must come from somewhere else.
 
 The only page that describes the claim page's repeat behaviour at all is
 [Register an Organization-owned Agent](https://docs.terminal3.io/developers/agents/provision-org-agent):
@@ -389,7 +389,7 @@ The only page that describes the claim page's repeat behaviour at all is
 > "issues a fresh key together with metered test credits **every time you visit**"
 
 That sentence is true and still misleads, for the reason measured in issue 11: a fresh *key* is not a
-fresh *identity*. Read while looking for an agent principal, it reads like the solution — I followed
+fresh *identity*. Read while looking for an agent principal, it reads like the solution. I followed
 it, and it is why my first version of this report claimed the procedure was undocumented rather than
 unworkable.
 
@@ -399,31 +399,31 @@ behaviour lives where a public-agent builder has no reason to look.
 
 The sandbox landing page adds a third partial view, advertising "20,000 test credits — enough for
 **25 agents**" and "25 did:t3n verifiable agent identities", without saying how one developer obtains
-25 identities — which, per issue 11, repeat claim-page visits do not provide.
+25 identities, which, per issue 11, repeat claim-page visits do not provide.
 
 **Reproduction:** follow Quickstart, then Agent Auth, then click through to the claim page. Nothing
 on that path explains what a second visit does; the "shown once, no way to view it again" warning
 suggests the opposite of what happens.
 
-**Fix:** state it once on the claim page itself — a repeat visit issues a new wallet on your existing
+**Fix:** state it once on the claim page itself: a repeat visit issues a new wallet on your existing
 DID, and here is how to obtain a separate agent principal. That single addition resolves both this
 issue and issue 11.
 
 ---
 
-## 12. The testnet trust manifest is missing a field SDK 5.10 requires — nothing can connect
+## 12. The testnet trust manifest is missing a field SDK 5.10 requires, so nothing can connect
 
 **Severity: critical** (every current SDK install fails at the first line of the Quickstart)
 
-`fetchTrustedManifest("testnet")` — step 3 of the Quickstart, the first network call any project
-makes — throws:
+`fetchTrustedManifest("testnet")`, step 3 of the Quickstart and the first network call any project
+makes, throws:
 
 ```
 Error: Trust manifest at https://cn-api.sg.testnet.t3n.terminal3.io/api/trust-manifest is malformed.
     at fetchTrustedManifest (.../@terminal3/t3n-sdk/dist/index.esm.js:2:413646)
 ```
 
-The endpoint itself is healthy — HTTP 200, valid JSON, signed 2026-08-27:
+The endpoint itself is healthy: HTTP 200, valid JSON, signed 2026-08-27:
 
 ```json
 {
@@ -450,19 +450,19 @@ rtmr1_allowlist: string[];
 
 So the cluster publishes a pre-RTMR1 manifest while the published SDK requires RTMR1. Switching
 environment does not help: `NODE_URLS` maps **both** `testnet` and `sandbox` to the same host
-(`https://cn-api.sg.testnet.t3n.terminal3.io`), so the claim page's own sample code —
-`setEnvironment("sandbox")` — hits the identical broken manifest.
+(`https://cn-api.sg.testnet.t3n.terminal3.io`), so the claim page's own sample code,
+`setEnvironment("sandbox")`, hits the identical broken manifest.
 
 **Reproduction:** `npm install @terminal3/t3n-sdk`, then run the Quickstart verbatim. It fails before
 authenticating. `curl https://cn-api.sg.testnet.t3n.terminal3.io/api/trust-manifest` shows the
 missing field.
 
 **Impact:** this is the first call in the documented flow, so nobody starting today gets past it.
-The only way through is `{ unsafe_trust_server: true }` — the SDK's own escape hatch, which skips DKG
+The only way through is `{ unsafe_trust_server: true }`, the SDK's own escape hatch, which skips DKG
 attestation verification. That is precisely the guarantee the platform sells, so the workaround
 disables the product's core property in order to use it.
 
-**Aggravating detail:** the failure prints the SDK's obfuscated bundle to the terminal — 1.6 MB of
+**Aggravating detail:** the failure prints the SDK's obfuscated bundle to the terminal: 1.6 MB of
 minified source before the one line that matters. The actual message is recoverable only with
 `awk 'length < 200'`.
 
@@ -476,7 +476,7 @@ error names the cause and the flag rather than leaving the reader with "malforme
 
 ---
 
-## 13. Nothing says what makes a call "delegated" — and the field that decides it is named after PII
+## 13. Nothing says what makes a call "delegated", and the field that decides it is named after PII
 
 **Severity: high** (a correct grant still fails, and the error points at the grant)
 
@@ -491,10 +491,10 @@ What no page states is **how the node decides which kind of call it is looking a
 that user's grant; absent, and it is a self-call evaluated against the caller's own.
 
 Nothing in the ADK docs connects that field to authorisation at all. Its only description in the SDK
-is about audit — "the user whose data the call touched (host-stamped `pii_did`)" — and the delegated
+is about audit, "the user whose data the call touched (host-stamped `pii_did`)", and the delegated
 / self distinction appears in a comment about `AuditEvent`, not in anything a caller reads while
 writing an `execute`. The name completes the trap: `pii_did` reads as "set this when you are sending
-personal data", so the natural implementation sets it on exactly the one function that carries PII —
+personal data", so the natural implementation sets it on exactly the one function that carries PII,
 which is what I did.
 
 **The symptom is actively misleading.** Every lookup fails with:
@@ -504,12 +504,12 @@ host/http.egress_denied: host 'api.gleif.org' not in the authorised_hosts allowl
 ```
 
 The host *is* in the allowlist. The grant naming it was signed seconds earlier and accepted. What
-failed is that the agent, being a separate DID, was checked against a self-grant it never had — so
+failed is that the agent, being a separate DID, was checked against a self-grant it never had, so
 the message describes a missing allowlist entry while the real problem is a missing delegation
 marker.
 
-**Why it hides until the last moment:** while the agent and the tenant share a DID — which is what
-the claim page hands you (issue 11) — the agent's self-grant *is* the user's grant, so the omission
+**Why it hides until the last moment:** while the agent and the tenant share a DID, which is what
+the claim page hands you (issue 11), the agent's self-grant *is* the user's grant, so the omission
 has no effect. Everything works. The failure appears only after you fix the identity model, at which
 point it looks like the fix broke a working system.
 
@@ -517,7 +517,7 @@ point it looks like the fix broke a working system.
 function that makes an outbound request **without** `pii_did`. It fails with `egress_denied` for a
 host that is present in the grant. Add `pii_did: <tenantDid>` and the identical call succeeds.
 
-**Fix:** say it on the outbound-HTTP page, one line under the rule — a call is delegated when the
+**Fix:** say it on the outbound-HTTP page, one line under the rule: a call is delegated when the
 `execute` payload carries `pii_did`. Consider an alias (`on_behalf_of`) so the field's name matches
 what it actually controls.
 
@@ -531,7 +531,7 @@ with a twelve-row troubleshooting table. Before submitting this list I went thro
 row, because a bug report that repeats what you already document is noise.
 
 **None of the eleven issues above appears in it.** The table covers runtime symptoms a developer hits
-while following the docs correctly — `type: module`, unexported keys, out-of-scope variables, ACL
+while following the docs correctly: `type: module`, unexported keys, out-of-scope variables, ACL
 defaults, hex-encoding the tenant id, egress grants. Everything in this report is a different
 category: places where the documentation itself is wrong, absent, or contradicts another page.
 

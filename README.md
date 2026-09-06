@@ -2,8 +2,8 @@
 
 A supplier due-diligence agent built on [Terminal 3](https://terminal3.io)'s Agent Developer Kit.
 
-It answers the question every company asks before it signs a new vendor — **is this counterparty
-real, active, and safe to pay?** — and files the onboarding record without the buyer's contact
+It answers the question every company asks before signing a new vendor: **is this counterparty
+real, active, and safe to pay?** Then it files the onboarding record, without the buyer's contact
 details ever touching the agent's process.
 
 ```
@@ -25,12 +25,12 @@ checks  :
 ```
 
 That is a real run, copied verbatim: the LEI, address and renewal date are what GLEIF returns today,
-and the two DIDs are the live testnet identities — the agent is a separate principal from the tenant
+and the two DIDs are the live testnet identities. The agent is a separate principal from the tenant
 that owns the contract, which is the whole point of the delegation model.
 
 ## Verify it without an account
 
-The whole build can be checked before you claim a single key — no T3N account, no third-party
+The whole build can be checked before you claim a single key. No T3N account, no third-party
 signup, nothing to configure:
 
 ```bash
@@ -92,20 +92,20 @@ justify a rejection to the supplier:
 unit tests.
 
 `--submit` refuses outright on `fail`. A `review` verdict is still filed, carrying its score and its
-`checks` array, because the procurement system is where a human signs off — the agent's job is to
+`checks` array, because the procurement system is where a human signs off. The agent's job is to
 narrow that decision, not to make it.
 
 ### Picking the right company out of a name search
 
 A name search rarely returns one row. Searching GLEIF for "Acme GmbH" today returns a **retired**
 `Acme International GmbH` ahead of an **active** `Acme United Europe GmbH`, so taking the first
-record would report a dead entity for a live supplier — a rejection the buyer cannot explain and the
+record would report a dead entity for a live supplier: a rejection the buyer cannot explain and the
 supplier cannot fix.
 
 The contract ranks matches instead: name agreement first, then an active entity, then a current
-registration. Name agreement outranks liveness deliberately — the right company in a bad state is a
-real finding, while the wrong company in a good state is a false clear. Everything not chosen comes
-back in `candidates`, so a human can overrule it.
+registration. Name agreement outranks liveness deliberately, because the right company in a bad
+state is a real finding, while the wrong company in a good state is a false clear. Everything not
+chosen comes back in `candidates`, so a human can overrule it.
 
 ## How the PII protection actually works
 
@@ -125,7 +125,7 @@ back in `candidates`, so a human can overrule it.
 Those markers are literal strings in the WASM module. The host substitutes the real values inside
 the enclave, at dispatch time, and only if the calling user has authorised *this* agent for *this*
 function and *this* destination host. The contract cannot read them, cannot log them, and cannot
-send them anywhere else — a redirect to a different host fails with `host/http.egress_denied`
+send them anywhere else. A redirect to a different host fails with `host/http.egress_denied`
 before any substitution happens.
 
 A test enforces this so a future edit cannot quietly inline a real value:
@@ -139,14 +139,14 @@ assert!(value.starts_with("{{profile.") && value.ends_with("}}"),
 ## Quick start
 
 Prerequisites: Node 20+, Rust with `wasm32-wasip2`, and **two** keys from the
-[claim page](https://docs.terminal3.io/developers/adk/get-started/prerequisites/request-test-tokens)
-— one for you, one for the agent. They are separate identities with separate credits; reusing one
-key for both defeats the delegation model this repository exists to demonstrate.
+[claim page](https://docs.terminal3.io/developers/adk/get-started/prerequisites/request-test-tokens):
+one for you and one for the agent. They are separate identities with separate credits, and reusing
+one key for both defeats the delegation model this repository exists to demonstrate.
 
 **Two accounts, not two visits.** Claiming a second key from the *same* account gives you a second
-keypair bound to the *same* DID — verified against the live cluster, see [BUGS.md](BUGS.md) #11. A
-separate agent principal needs a separate claim-page account. `npm run whoami` refuses to continue if
-both keys resolve to one DID, so you find out in five seconds rather than after deploying.
+keypair bound to the *same* DID, verified against the live cluster; see [BUGS.md](BUGS.md) #11.
+A separate agent principal needs a separate claim-page account. `npm run whoami` refuses to
+continue if both keys resolve to one DID, so you find out in five seconds rather than after deploying.
 
 **One flag you currently need.** The testnet trust manifest omits a field SDK 5.10 requires, so
 `fetchTrustedManifest` rejects it and nothing connects ([BUGS.md](BUGS.md) #12). Until the cluster
@@ -165,7 +165,7 @@ T3N_UNSAFE_TRUST=1 npm run quickstart   # documented Quickstart: prints your ten
 T3N_UNSAFE_TRUST=1 npm run whoami       # verifies both identities before anything is deployed
 ```
 
-`quickstart` prints your tenant DID — put it in `.env` as `T3N_TENANT_DID`, then:
+`quickstart` prints your tenant DID. Put it in `.env` as `T3N_TENANT_DID`, then:
 
 ```bash
 T3N_UNSAFE_TRUST=1 npm run setup        # build, register, create maps, sign the grant
@@ -178,7 +178,7 @@ T3N_UNSAFE_TRUST=1 npm run kyb -- --name "Acme GmbH" --country DE --vat 81190798
 Drop the prefix as soon as the manifest is fixed; the code prefers real verification and only falls
 back when the flag is set.
 
-`npm run setup` is `build:contract` + `deploy` + `grant`. Every step is idempotent — re-running it
+`npm run setup` is `build:contract` + `deploy` + `grant`. Every step is idempotent, so re-running it
 after a failure is safe, and the only thing that ever needs a manual bump is the contract version
 in `contract/Cargo.toml`.
 
@@ -194,7 +194,7 @@ agent has not been authorised to perform.
 ## Layout
 
 ```
-contract/            the TEE contract — Rust, compiled to a WASI P2 component
+contract/            the TEE contract (Rust, compiled to a WASI P2 component)
   wit/world.wit      the capability list: nothing outside it is reachable
   src/gleif.rs       GLEIF lookup + response parsing
   src/vies.rs        VIES lookup + response parsing
@@ -214,7 +214,7 @@ src/                 the TypeScript side
 
 ## Maintenance
 
-This was built to be handed over, so the things that rot are documented rather than implied — see
+This was built to be handed over, so the things that rot are documented rather than implied. See
 [docs/MAINTENANCE.md](docs/MAINTENANCE.md) for the full list. The short version:
 
 - **Adding a data source** means editing three places, and CI fails if you miss one. The
@@ -244,8 +244,8 @@ steps and the fix that worked.
 ## Security notes
 
 - `.env` is gitignored; keys are read from the environment and never written to a file by any script.
-- Both VIES path segments and the GLEIF query are validated and encoded before they reach a URL —
-  see the path-traversal tests in `contract/src/common.rs`.
+- Both VIES path segments and the GLEIF query are validated and encoded before they reach a URL.
+  See the path-traversal tests in `contract/src/common.rs`.
 - The contract logs company identifiers only. No log line in this repository can contain personal data.
 - The KV maps are created with an explicit `readers` list. Omitting it silently produces a
   deny-all map whose own contract cannot read it back.

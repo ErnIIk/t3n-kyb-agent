@@ -32,7 +32,7 @@ Roughly 20 minutes, most of which is waiting on a Rust build.
 code references the original owner except the `provider.url` field of the agent card, which
 `register-card.ts` regenerates.
 
-**2. Claim two keys** on the claim page — one tenant, one agent — and put them in `.env`.
+**2. Claim two keys** on the claim page, one tenant and one agent, and put them in `.env`.
 
 **3. Deploy under the new tenant:**
 
@@ -46,7 +46,7 @@ npm run register-card  # publish the agent card under the new agent DID
 ```
 
 The contract is now `z:<new-tenant>:kyb-contracts`. The old deployment is untouched and can be left
-to expire — the two do not interact.
+to expire; the two do not interact.
 
 **4. Verify:**
 
@@ -70,7 +70,7 @@ Honest maintenance load, based on what actually moved during the build:
 
 | Frequency | Task | Effort |
 |---|---|---|
-| When the SDK bumps a major | Check `src/session.ts` — all T3N auth is in that one file | ~30 min |
+| When the SDK bumps a major | Check `src/session.ts`; all T3N auth is in that one file | ~30 min |
 | When a smoke test fails | Read the run log; upstream-vs-T3N is already separated by job | ~15 min |
 | When GLEIF or VIES changes a response shape | Fixture test fails; update the parser and refresh the fixture | ~1 hour |
 | When someone wants a new data source | Three edits; a test fails if you miss the third | ~2 hours |

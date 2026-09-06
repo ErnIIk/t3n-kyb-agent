@@ -1,20 +1,20 @@
-# Superteam submission — Terminal 3 / T3N trusted agent bounty
+# Superteam submission: Terminal 3 / T3N trusted agent bounty
 
 > Draft for the public Google Doc. Paste as-is and add the screenshots where marked.
 
 ## What I built
 
-**t3n-kyb-agent** — a supplier due-diligence (KYB) agent on the T3 Agent Developer Kit.
+**t3n-kyb-agent** is a supplier due-diligence (KYB) agent on the T3 Agent Developer Kit.
 
 - Repository: `https://github.com/ErnIIk/t3n-kyb-agent` *(public)*
-- Contract: `z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts` — contract id **883**,
+- Contract: `z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts`, contract id **883**,
   Rust compiled to a `wasm32-wasip2` component
 - Agent card (live, hosted by T3N):
   `https://cn-api.sg.testnet.t3n.terminal3.io/api/agent-card/did:t3n:d7a47645b122ce1151f1f6ecdd40a4ab2de7318d`
 - Environment: testnet
 
-It answers the question a company asks before signing any new vendor — is this counterparty real,
-active, and safe to pay? — and files the onboarding record without the buyer's contact details ever
+It answers the question a company asks before signing any new vendor: is this counterparty real,
+active, and safe to pay? It then files the onboarding record without the buyer's contact details ever
 touching the agent's process.
 
 **It is deployed and working.** A live run against the cluster returns a scored verdict from real
@@ -32,7 +32,7 @@ onboarding submitted to httpbin.org: HTTP 200
 ```
 
 Getting there required working around **a platform bug that currently blocks every new SDK install**
-— see issue 12 below.
+(see issue 12 below).
 
 ## Scope checklist
 
@@ -40,15 +40,15 @@ Getting there required working around **a platform bug that currently blocks eve
 |---|---|---|
 | Sign up via SSO | done | — |
 | Obtain DID & API key | done | two keys claimed: one tenant, one agent |
-| Complete the Quickstart | done | `src/quickstart.ts`, `npm run quickstart` — Screenshot 1 |
+| Complete the Quickstart | done | `src/quickstart.ts`, `npm run quickstart`, Screenshot 1 |
 | Complete the Walkthrough | done | all 5 steps mapped in `docs/WALKTHROUGH.md` |
-| Enterprise agent, useful | done | KYB — GLEIF + VIES + PII-safe onboarding |
+| Enterprise agent, useful | done | KYB: GLEIF + VIES + PII-safe onboarding |
 | Easy to maintain | done | see the section below; `docs/MAINTENANCE.md` |
 | Running post challenge | done | weekly live smoke test, `.github/workflows/smoke.yml` |
 | Continue running or hand over | answered below | full process in `docs/HANDOVER.md` |
 | Public GitHub repo | done | link above |
 | Screenshots | below | also in `screenshots/` |
-| Bugs faced | **14, reproducible** — 1 critical, 4 high | `BUGS.md` |
+| Bugs faced | **14, reproducible**: 1 critical, 4 high | `BUGS.md` |
 
 ## What is different about this submission
 
@@ -57,7 +57,7 @@ than for decoration:
 
 1. **A test that fails when the permission grant drifts from the code.** Adding an outbound host to
    the contract without adding it to the agent grant is invisible until runtime, where it surfaces as
-   `host/http.egress_denied` — usually during a demo. `contract/tests/allowlist.rs` reads the
+   `host/http.egress_denied`, usually during a demo. `contract/tests/allowlist.rs` reads the
    TypeScript grant and fails the build instead.
 2. **CI that builds both targets, because native tests are not enough.** Host-calling code is behind
    `cfg(target_arch = "wasm32")`. Mid-build, a removed import left every native test green while the
@@ -69,14 +69,14 @@ than for decoration:
    hand-maintained JSON file that drifts; here the card cannot advertise a skill the agent was never
    authorised to perform.
 5. **Bugs verified against the SDK's types, not just experienced.** Each entry names the file and
-   line in `index.d.ts` that contradicts the documentation — including a probable single root cause:
+   line in `index.d.ts` that contradicts the documentation, including a probable single root cause:
    the docs were validated against SDK 3.x while npm serves 5.10.0.
 6. **The documented demos are covered by tests.** Both commands in the README are pinned by
    regression tests against captured live registry responses, so the README, the weekly smoke test
    and the code cannot drift apart. That check earned its place immediately: it exposed that
    searching GLEIF for "Acme GmbH" returns a *retired* company first, which scored 65 and made the
-   documented `--submit` demo refuse to run. Records are now ranked — name agreement above liveness
-   above a current registration — and the rows that lose come back as `candidates` so a human can
+   documented `--submit` demo refuse to run. Records are now ranked, name agreement above liveness
+   above a current registration, and the rows that lose come back as `candidates` so a human can
    overrule the choice.
 
 ## Why KYB, on this platform specifically
@@ -105,26 +105,26 @@ Four functions exported from one TEE contract:
 | `verify-entity` | GLEIF Global LEI Index | no | Is the legal entity registered and active? |
 | `check-vat` | EC VIES | no | Is the VAT number valid right now? |
 | `run-kyb-check` | both, one invocation | no | Scored verdict: pass / review / fail |
-| `submit-onboarding` | procurement endpoint | **yes — via `{{profile.*}}`** | File the supplier record |
+| `submit-onboarding` | procurement endpoint | **yes, via `{{profile.*}}`** | File the supplier record |
 
 Both data sources are public and need **no API key and no signup**, so anyone reviewing this can
 clone the repo and get a real verdict against real registry data using only their own T3N keys.
 
-The scoring is a table, not a black box — every rule that can reject a supplier is one line in
+The scoring is a table, not a black box: every rule that can reject a supplier is one line in
 `kyb.rs` and one entry in the returned `checks` array, because a procurement officer has to be able
 to justify a rejection to the supplier.
 
 ## Screenshots
 
-1. `npm run quickstart` — the documented Quickstart: `Connected as: did:t3n:…`
-2. `npm run whoami` — tenant and agent as two separate identities
-3. `npm run deploy` — contract registered, KV maps created, config seeded
-4. `npm run grant` — the user authorising 4 functions and 3 hosts
-5. `npm run register-card` — public agent card published and read back
-6. `npm run kyb` — a full KYB verdict against live GLEIF and VIES data
-7. `npm run kyb -- --submit` — onboarding filed; the echoed body shows the `{{profile.*}}` markers
+1. `npm run quickstart`: the documented Quickstart, `Connected as: did:t3n:…`
+2. `npm run whoami`: tenant and agent as two separate identities
+3. `npm run deploy`: contract registered, KV maps created, config seeded
+4. `npm run grant`: the user authorising 4 functions and 3 hosts
+5. `npm run register-card`: public agent card published and read back
+6. `npm run kyb`: a full KYB verdict against live GLEIF and VIES data
+7. `npm run kyb -- --submit`: onboarding filed; the echoed body shows the `{{profile.*}}` markers
    resolved by the host and never by the contract
-8. `npm run test:contract` — 39 tests passing with no credentials configured
+8. `npm run test:contract`: 39 tests passing with no credentials configured
 
 ## Usefulness and ease of maintenance
 
@@ -145,14 +145,14 @@ This was the judging criterion I optimised for, so the specifics rather than adj
   fails loudly if it breaks, with the public registries checked in a separate job so upstream
   outages are distinguishable from T3N problems.
 - **Re-pointing the integration is a config write, not a redeploy.** The onboarding endpoint lives in
-  a KV map; changing it is one environment variable, and the grant must be re-signed — deliberate,
+  a KV map; changing it is one environment variable, and the grant must be re-signed, which is deliberate:
   since changing where PII goes should need the user's signature.
 - **The agent is discoverable, and its card cannot lie.** `npm run register-card` publishes a public
-  agent card hosted by T3N itself — no external pinning service to keep alive. It is generated from
+  agent card hosted by T3N itself, with no external pinning service to keep alive. It is generated from
   the same constants as the grant, so the card cannot advertise a skill the agent was never
   authorised to perform.
 - **All T3N auth lives in one file.** `src/session.ts` is the only place that touches handshake,
-  authentication and version resolution — which matters, because the SDK is the part most likely to
+  authentication and version resolution. That matters, because the SDK is the part most likely to
   move (see bug 9).
 
 ## Bugs found
@@ -161,16 +161,16 @@ Fourteen issues, each with reproduction steps and the workaround, in
 [`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md). Two of them are blocking, and
 both were found by actually running against the cluster rather than by reading.
 
-**Issue 12 — critical: nothing can connect to testnet with the current SDK.** The first network call
+**Issue 12, critical: nothing can connect to testnet with the current SDK.** The first network call
 in the Quickstart, `fetchTrustedManifest("testnet")`, throws `Trust manifest … is malformed`. The
 endpoint is healthy (HTTP 200, signed 2026-08-27); it simply omits `rtmr1_allowlist`, which SDK 5.10
 declares mandatory in `SignedTrustManifest` and `TrustAnchor` ("**Must be non-empty**"). Switching
-environment does not help — `NODE_URLS` maps `sandbox` and `testnet` to the same host, so the claim
+environment does not help, because `NODE_URLS` maps `sandbox` and `testnet` to the same host, so the claim
 page's own `setEnvironment("sandbox")` sample hits the identical failure. The only way through is
-`{ unsafe_trust_server: true }`, which disables DKG attestation — the guarantee the platform exists to
+`{ unsafe_trust_server: true }`, which disables DKG attestation, the guarantee the platform exists to
 provide. Every submission this round is presumably hitting this.
 
-**Issue 11 — high: the claim page cannot give an agent its own identity.** Agent Auth says the agent
+**Issue 11, high: the claim page cannot give an agent its own identity.** Agent Auth says the agent
 needs "its **own** DID and its **own** test credits — from the same claim page". I claimed a second
 key exactly that way and measured the result:
 
@@ -180,29 +180,29 @@ agent  : 0x1693fde558fbb3bdff8410d86420f661e8e942cd → did:t3n:947e9ba8705790c0
 ```
 
 Two keypairs, one principal. A repeat visit binds another wallet to the signed-in account's existing
-DID — consistent with `eth_authenticator_limit` ("wallet limit per DID"), but not what Agent Auth
+DID, consistent with `eth_authenticator_limit` ("wallet limit per DID"), but not what Agent Auth
 promises. The failure is silent: the grant is written and enforced, yet grantor and grantee are the
 same DID, so the delegation proves nothing while looking correct. `npm run whoami` compares the two
 DIDs and refuses to continue, which is the only reason this surfaced before deployment.
 
-**Issue 13 — high: a correct grant still fails, and the error blames the grant.** The
+**Issue 13, high: a correct grant still fails, and the error blames the grant.** The
 outbound-HTTP page says delegated calls use the subject user's grant and self-calls use the caller's
 own. It never says what makes a call delegated. The answer is the `pii_did` field on the `execute`
-payload — a name that reads as "set this when sending personal data", so the obvious implementation
+payload, a name that reads as "set this when sending personal data", so the obvious implementation
 puts it only on the function that carries PII. Every other call is then treated as a self-call by an
 agent that has no self-grant, and fails with `host/http.egress_denied` naming a host that *is* in the
 allowlist, from a grant signed seconds earlier.
 
 The bug is invisible until the identity model is correct: while the agent shares the tenant's DID
 (issue 11), its self-grant *is* the user's grant, so everything works. Fixing the identities is what
-surfaces it — which makes it look like the fix caused it.
+surfaces it, which makes it look like the fix caused it.
 
 
 **All fourteen were checked against your own twelve-row known-pitfalls table** in
 [Using AI Coding Assistants](https://docs.terminal3.io/developers/adk/support/ai-coding-assistants),
 and none of them duplicates a row in it. That table covers runtime symptoms hit while following the
 docs correctly; this report covers places where the documentation is wrong, missing, or contradicts
-another page. Two findings are cases of the docs disagreeing with themselves — the skill file says
+another page. Two findings are cases of the docs disagreeing with themselves: the skill file says
 "never construct the DID, read `did.value`", while the Agent Auth page passes the `Did` object
 straight into the grant.
 
@@ -211,7 +211,7 @@ that does not work:
 
 1. **`agent-auth-adk` puts a `Did` object where a string belongs.** The page ends with
    `const agentDid = await agentClient.authenticate(...)` and feeds that straight into the `agentDid`
-   field of the grant — but `authenticate()` returns `Did { value }`, so the grant is written against
+   field of the grant, but `authenticate()` returns `Did { value }`, so the grant is written against
    a serialised object. Quickstart and `invoke-contract` both do `.value` correctly; this page is the
    odd one out.
 
@@ -254,13 +254,13 @@ command, and add three repository secrets to switch on the weekly smoke test. Ab
 of it a Rust build.
 
 What makes it that short is what you are not inheriting: there is no hosted service, no database, no
-cron host, no paid dependency, and nothing tied to my identity — the tenant DID simply follows
+cron host, no paid dependency, and nothing tied to my identity, since the tenant DID simply follows
 whichever key runs the deploy, and both data sources are public and keyless. The maintenance guide is
 written for a stranger rather than for me, and `docs/HANDOVER.md` includes an honest table of the
 ongoing load: an SDK major bump is the one thing likely to need real attention, which is why every
 handshake and `execute` call goes through a single file.
 
-Until the handover completes, the agent stays deployed on testnet and I will keep it running — the
+Until the handover completes, the agent stays deployed on testnet and I will keep it running: the
 weekly smoke test means a break is visible rather than discovered later.
 
 I am happy to walk someone through it or answer questions during the transfer.
@@ -270,7 +270,7 @@ I am happy to walk someone through it or answer questions during the transfer.
 > Built a KYB agent on @terminal3io's ADK.
 >
 > It checks a supplier against the GLEIF LEI index and EU VIES inside a TEE contract, scores a
-> pass/review/fail verdict, then files the onboarding record — while the contact person's name and
+> pass/review/fail verdict, then files the onboarding record, while the contact person's name and
 > email are resolved inside the enclave and never touch my process.
 >
 > Both registries are public and keyless, so you can clone it and get a real verdict with just your
@@ -280,7 +280,7 @@ I am happy to walk someone through it or answer questions during the transfer.
 
 Follow-up post:
 
-> Fourteen bugs and docs issues found on the way, each with a reproduction — including no documented
+> Fourteen bugs and docs issues found on the way, each with a reproduction, including no documented
 > way to claim the second key every agent needs, a docs page that hands a `Did` object where a string
 > belongs, and a `cargo test` that cannot run because the reference repo pins the WASM target.
 >
