@@ -9,6 +9,7 @@
     "build:contract": "cargo build --release --manifest-path contract/Cargo.toml",
     "test:contract": "cargo test --manifest-path contract/Cargo.toml --target x86_64-pc-windows-msvc",
     "typecheck": "tsc --noEmit",
+    "quickstart": "tsx src/quickstart.ts",
     "whoami": "tsx src/whoami.ts",
     "deploy": "tsx src/deploy.ts",
     "grant": "tsx src/grant.ts",

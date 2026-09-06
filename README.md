@@ -117,10 +117,12 @@ npm install
 rustup target add wasm32-wasip2
 
 cp .env.example .env       # paste both keys
+
+npm run quickstart         # the documented Quickstart: prints your tenant DID
 npm run whoami             # verifies both identities before anything is deployed
 ```
 
-`whoami` prints your tenant DID — put it in `.env` as `T3N_TENANT_DID`, then:
+`quickstart` prints your tenant DID — put it in `.env` as `T3N_TENANT_DID`, then:
 
 ```bash
 npm run setup              # build the contract, register it, create maps, grant the agent
@@ -154,6 +156,7 @@ contract/            the TEE contract — Rust, compiled to a WASI P2 component
   tests/             fixtures from the live APIs + the grant/code consistency test
 src/                 the TypeScript side
   session.ts         auth for both identities, and the grant's allowlists
+  quickstart.ts      the documented Quickstart, kept runnable on its own
   whoami.ts          check credentials before deploying
   deploy.ts          register the contract, create KV maps, seed config
   grant.ts           the user's signed authorisation of the agent
@@ -175,6 +178,14 @@ This was built to be handed over, so the things that rot are documented rather t
   re-register at the same version, and `deploy.ts` says so explicitly when it happens.
 - **No credentials are needed to work on this.** CI builds the contract, runs 33 tests and
   typechecks the client without any T3N key.
+- **It tells you when it stops working.** [A weekly workflow](.github/workflows/smoke.yml) runs the
+  real agent against testnet and fails loudly if it breaks, checking the public registries in a
+  separate job so you can tell upstream problems from T3N ones. Without secrets configured it skips
+  and passes, so a fork never fails a run it cannot pass.
+
+Taking it over is a 20-minute process, written out in [docs/HANDOVER.md](docs/HANDOVER.md).
+[docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) maps every documented Quickstart and Walkthrough step to
+the file that performs it.
 
 ## Bugs and docs feedback
 

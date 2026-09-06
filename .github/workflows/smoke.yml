@@ -1,0 +1,95 @@
+name: Weekly live smoke test
+
+# The bounty asks for an agent that keeps running after the challenge. An agent
+# nobody exercises is an agent that quietly stops working — the SDK moves, a
+# registry changes its response shape, a testnet contract gets superseded, and
+# nobody notices until someone tries a demo.
+#
+# This runs the real agent against the real network once a week and fails loudly
+# if it stops working. A failed run emails the repository owner without any
+# extra alerting setup.
+#
+# Secrets required (repository settings -> Secrets and variables -> Actions):
+#   T3N_API_KEY     tenant key
+#   T3N_AGENT_KEY   agent key (a different claimed key)
+#   T3N_TENANT_DID  did:t3n:... printed by `npm run quickstart`
+#
+# Without those secrets the job reports "skipped" and succeeds, so a fork never
+# fails a run it has no way to pass.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays, 06:17 UTC
+  workflow_dispatch:
+
+jobs:
+  upstream-registries:
+    name: upstream registries reachable
+    runs-on: ubuntu-latest
+    steps:
+      # Checked separately from the agent so a failure tells you *which* side
+      # broke: a public registry, or Terminal 3.
+      - name: GLEIF
+        run: |
+          code=$(curl -s -o /tmp/gleif.json -w "%{http_code}" -m 30 \
+            -H "Accept: application/vnd.api+json" \
+            "https://api.gleif.org/api/v1/lei-records?filter%5Blei%5D=529900IH9V4I3VHQVO92&page%5Bsize%5D=1")
+          echo "HTTP $code"
+          test "$code" = "200"
+          grep -q '"lei":"529900IH9V4I3VHQVO92"' /tmp/gleif.json
+
+      - name: VIES
+        run: |
+          code=$(curl -s -o /tmp/vies.json -w "%{http_code}" -m 40 \
+            "https://ec.europa.eu/taxation_customs/vies/rest-api/ms/DE/vat/811907980")
+          echo "HTTP $code"
+          test "$code" = "200"
+          # VIES member-state systems have scheduled downtime; only the transport
+          # is asserted here, the payload shape is covered by the fixture tests.
+          grep -q '"isValid"' /tmp/vies.json
+
+  live-agent:
+    name: agent against testnet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Check credentials are configured
+        id: creds
+        env:
+          T3N_API_KEY: ${{ secrets.T3N_API_KEY }}
+        run: |
+          if [ -z "$T3N_API_KEY" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "No T3N secrets configured — skipping the live run."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.creds.outputs.configured == 'true'
+        run: npm ci
+
+      # Does not redeploy: it exercises the contract already registered on
+      # testnet, which is exactly what a real caller does.
+      - name: Run a KYB check
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          T3N_API_KEY: ${{ secrets.T3N_API_KEY }}
+          T3N_AGENT_KEY: ${{ secrets.T3N_AGENT_KEY }}
+          T3N_TENANT_DID: ${{ secrets.T3N_TENANT_DID }}
+        run: |
+          npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" \
+            --country DE --vat 811907980 | tee run.log
+          grep -q "verdict : PASS" run.log
+
+      - name: Upload run log
+        if: steps.creds.outputs.configured == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-run-log
+          path: run.log
+          if-no-files-found: ignore
