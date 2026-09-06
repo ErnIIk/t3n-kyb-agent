@@ -14,6 +14,7 @@ import {
   type Environment,
   eth_get_address,
   fetchTrustedManifest,
+  getContractVersion,
   getNodeUrl,
   loadWasmComponent,
   metamask_sign,
@@ -106,6 +107,19 @@ export async function openAgentSession(): Promise<Session> {
 /** `z:<tid>:<tail>` — the canonical name of anything this tenant owns. */
 export function canonicalName(tenantDid: string, tail: string): string {
   return `z:${tenantDid.replace(/^did:t3n:/, "")}:${tail}`;
+}
+
+/**
+ * Resolves the currently registered version of a contract.
+ *
+ * `execute` payloads are deserialised strictly into `contract_id` /
+ * `contract_version` / `function_name` / `input`, and the server parses the
+ * version as SemVer — omitting it fails with `missing field contract_version`,
+ * and a literal "latest" fails to parse. Looking it up keeps redeploys from
+ * requiring an edit here, and the SDK caches the answer per contract name.
+ */
+export async function resolveContractVersion(contractId: string): Promise<string> {
+  return getContractVersion(getNodeUrl(), contractId);
 }
 
 /** Contract tail, shared by deploy, grant and the agent. */

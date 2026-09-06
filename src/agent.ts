@@ -14,6 +14,7 @@ import {
   canonicalName,
   openAgentSession,
   requireEnv,
+  resolveContractVersion,
 } from "./session.js";
 
 interface Check {
@@ -111,12 +112,16 @@ async function main(): Promise<void> {
   const scriptName = canonicalName(tenantDid, CONTRACT_TAIL);
 
   const agent = await openAgentSession();
+  // Resolved once and reused: the server parses contract_version as SemVer, so
+  // it cannot be omitted and cannot be the string "latest".
+  const scriptVersion = await resolveContractVersion(scriptName);
   console.log(`agent   : ${agent.did}`);
-  console.log(`contract: ${scriptName}`);
+  console.log(`contract: ${scriptName}@${scriptVersion}`);
   console.log(`supplier: ${args.name}`);
 
   const verdict = await agent.client.executeAndDecode<KybVerdict>({
     contract_id: scriptName,
+    contract_version: scriptVersion,
     function_name: "run-kyb-check",
     input: {
       legal_name: args.name,
@@ -143,6 +148,7 @@ async function main(): Promise<void> {
 
   const submission = await agent.client.executeAndDecode<OnboardingResp>({
     contract_id: scriptName,
+    contract_version: scriptVersion,
     function_name: "submit-onboarding",
     input: {
       legal_name: args.name,

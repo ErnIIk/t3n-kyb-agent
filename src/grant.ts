@@ -18,6 +18,7 @@ import {
   canonicalName,
   openAgentSession,
   openTenantSession,
+  resolveContractVersion,
 } from "./session.js";
 
 /** The node-provided contract that stores per-user agent authorisations. */
@@ -34,8 +35,11 @@ async function main(): Promise<void> {
   console.log(`user    : ${tenantDid}`);
   console.log(`contract: ${scriptName}`);
 
+  // The grant deliberately carries no versionReq: pinning it would mean every
+  // contract redeploy silently revokes the agent until the grant is re-signed.
   await client.execute({
     contract_id: USER_CONTRACTS,
+    contract_version: await resolveContractVersion(USER_CONTRACTS),
     function_name: "agent-auth-update",
     input: {
       agents: [

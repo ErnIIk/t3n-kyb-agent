@@ -82,8 +82,9 @@ This was the judging criterion I optimised for, so the specifics:
 
 ## Bugs found
 
-Seven issues, each with reproduction steps and the workaround, in
-[`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md). The two that cost real time:
+Eight issues, each with reproduction steps and the workaround, in
+[`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md). The three that cost real time —
+all three are cases where copying the documented code produces something that does not work:
 
 1. **`agent-auth-adk` puts a `Did` object where a string belongs.** The page ends with
    `const agentDid = await agentClient.authenticate(...)` and feeds that straight into the
@@ -96,6 +97,15 @@ Seven issues, each with reproduction steps and the workaround, in
    `[build] target = "wasm32-wasip2"`, so Cargo builds the test harness as a WASM component and
    tries to execute it: `os error 193` on Windows, `Exec format error` on Linux. Needs either a note
    on the testing page or a change to the reference repo.
+
+3. **`invoke-contract` omits `contract_version` from the `agent-auth-update` call.** The SDK's own
+   internal docs say the server deserialises strictly into `contract_id` / `contract_version` /
+   `function_name` and returns `Invalid action request: missing field …` otherwise. The Agent Auth
+   page passes it for the same call; the invoke page does not, and the agent-side example a few
+   lines below *does* — so it reads as an editing slip. Behind it sits a second gap: nothing
+   documents where that version comes from. The answer is `getContractVersion(rpcUrl, contractId)`,
+   which the SDK exports but no page mentions, and `"latest"` is not accepted because the server
+   parses the field as SemVer.
 
 Also: no stated source for `wit/deps/` when starting from scratch (the only way I found is copying
 from `z-tenant-flight`); `T3N_API_KEY` is a secp256k1 private key rather than an API key, which

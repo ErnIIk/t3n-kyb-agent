@@ -90,7 +90,55 @@ reference repo in favour of passing `--target wasm32-wasip2` in the documented b
 
 ---
 
-## 3. There is no stated source for `wit/deps/` when starting a contract from scratch
+## 3. `invoke-contract` omits `contract_version`, which the server rejects outright
+
+**Severity: high** (the documented call fails with a 400 on the field the example is missing)
+
+[Invoke your TEE contract](https://docs.terminal3.io/developers/adk/get-started/walkthrough/invoke-contract)
+shows the user authorising the agent like this:
+
+```typescript
+await userClient.execute({
+  contract_id: "tee:user/contracts",
+  function_name: "agent-auth-update",
+  input: { agents: [...] },
+});
+```
+
+No `contract_version`. The SDK's own documentation for the request builder says that is not
+optional:
+
+> The server deserialises strictly into `contract_id` / `contract_version` / `function_name` —
+> sending `contract` / `version` / `function` produces `Invalid action request: missing field …`
+> 400s.
+> — `index.d.ts:3559-3568`
+
+[Agent Auth](https://docs.terminal3.io/developers/adk/overview/agent-auth-adk) gets it right and
+passes `contract_version: userContractVersion` for the same call, so the two pages disagree about
+the same request. The agent-side `executeAndDecode` example on the invoke page *does* include
+`contract_version: scriptVersion`, which makes the omission look like an editing slip rather than a
+deliberate difference.
+
+There is a second gap behind it: neither page says where `userContractVersion` comes from. The
+answer is `getContractVersion(rpcUrl, contractId)`, which is exported from the SDK but appears in no
+documentation page — and a literal `"latest"` cannot be used, because the server parses the field as
+SemVer.
+
+**Fix:** add `contract_version` to the invoke-contract example, and document `getContractVersion` as
+the supported way to obtain it.
+
+**What I did:** `src/session.ts` wraps it once, and every `execute` call in this repository resolves
+the version through it:
+
+```typescript
+export async function resolveContractVersion(contractId: string): Promise<string> {
+  return getContractVersion(getNodeUrl(), contractId);
+}
+```
+
+---
+
+## 4. There is no stated source for `wit/deps/` when starting a contract from scratch
 
 **Severity: medium** (blocks anyone not copying the reference repo wholesale)
 
@@ -116,7 +164,7 @@ clone builds without a second checkout.
 
 ---
 
-## 4. `T3N_API_KEY` is not an API key — it is a secp256k1 private key
+## 5. `T3N_API_KEY` is not an API key — it is a secp256k1 private key
 
 **Severity: medium** (a naming problem with a security consequence)
 
@@ -143,7 +191,7 @@ problem rather than "you used the wrong identity".
 
 ---
 
-## 5. Docs teach `executeControl("map-entry-set")` when the SDK has a typed helper
+## 6. Docs teach `executeControl("map-entry-set")` when the SDK has a typed helper
 
 **Severity: low** (works, but is the harder of two paths)
 
@@ -172,7 +220,7 @@ also avoids the `map_name` / `tail` confusion that the "canonical map name inval
 
 ---
 
-## 6. `use-cases/payroll-agent` is a dead end from inside the ADK docs
+## 7. `use-cases/payroll-agent` is a dead end from inside the ADK docs
 
 **Severity: low** (documentation navigation)
 
@@ -186,7 +234,7 @@ keep the ADK reading path intact.
 
 ---
 
-## 7. Minor: Quickstart installs `tsx` as a production dependency
+## 8. Minor: Quickstart installs `tsx` as a production dependency
 
 **Severity: cosmetic**
 
