@@ -10,19 +10,22 @@ details ever touching the agent's process.
 $ npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980
 
 agent   : did:t3n:9f2a...
-contract: z:1a2b...:kyb-contracts
+contract: z:1a2b...:kyb-contracts@0.1.0
 supplier: Deutsche Bank Aktiengesellschaft
 
 verdict : PASS (risk 0/100)
 entity  : Deutsche Bank Aktiengesellschaft — LEI 529900IH9V4I3VHQVO92
 address : 23-25, avenue Franklin Delano Roosevelt, 75008, Paris, FR
 checks  :
-  [PASS] gleif_entity_found      — LEI 529900IH9V4I3VHQVO92 on file
-  [PASS] entity_active           — entity status ACTIVE
-  [PASS] lei_registration_current— registration ISSUED, renews 2027-05-30
-  [PASS] name_match              — matches Deutsche Bank Aktiengesellschaft
-  [PASS] vat_valid               — DE811907980 registered
+  [PASS] gleif_entity_found — LEI 529900IH9V4I3VHQVO92 on file
+  [PASS] entity_active — entity status ACTIVE
+  [PASS] lei_registration_current — registration ISSUED, renews 2027-06-02
+  [PASS] name_match — matches Deutsche Bank Aktiengesellschaft
+  [PASS] vat_valid — DE811907980 registered
 ```
+
+The LEI, address and renewal date above are the live values GLEIF returns today; the two DIDs are
+shortened.
 
 ## Verify it without an account
 
@@ -33,7 +36,7 @@ signup, nothing to configure:
 npm ci && npm run test:contract && npm run build:contract && npm run typecheck
 ```
 
-That compiles the TEE contract to a WASM component, runs 33 tests, and typechecks the client. The
+That compiles the TEE contract to a WASM component, runs 37 tests, and typechecks the client. The
 same four commands are what CI runs on every push.
 
 ## Why this, on this platform
@@ -86,6 +89,18 @@ justify a rejection to the supplier:
 
 `< 20` passes, `20–49` goes to human review, `>= 50` is rejected. The whole table is covered by
 unit tests.
+
+### Picking the right company out of a name search
+
+A name search rarely returns one row. Searching GLEIF for "Acme GmbH" today returns a **retired**
+`Acme International GmbH` ahead of an **active** `Acme United Europe GmbH`, so taking the first
+record would report a dead entity for a live supplier — a rejection the buyer cannot explain and the
+supplier cannot fix.
+
+The contract ranks matches instead: name agreement first, then an active entity, then a current
+registration. Name agreement outranks liveness deliberately — the right company in a bad state is a
+real finding, while the wrong company in a good state is a false clear. Everything not chosen comes
+back in `candidates`, so a human can overrule it.
 
 ## How the PII protection actually works
 
@@ -188,7 +203,7 @@ This was built to be handed over, so the things that rot are documented rather t
   `ONBOARDING_URL=... npm run deploy` (the host must also be in the grant).
 - **Redeploying** requires bumping `version` in `contract/Cargo.toml`; the node rejects a
   re-register at the same version, and `deploy.ts` says so explicitly when it happens.
-- **No credentials are needed to work on this.** CI builds the contract, runs 33 tests and
+- **No credentials are needed to work on this.** CI builds the contract, runs 37 tests and
   typechecks the client without any T3N key.
 - **It tells you when it stops working.** [A weekly workflow](.github/workflows/smoke.yml) runs the
   real agent against testnet and fails loudly if it breaks, checking the public registries in a

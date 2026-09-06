@@ -1,7 +1,6 @@
 # Superteam submission — Terminal 3 / T3N trusted agent bounty
 
-> Draft for the public Google Doc. Paste as-is, add the screenshots where marked, and pick one of
-> the two options in "Running it after the challenge".
+> Draft for the public Google Doc. Paste as-is and add the screenshots where marked.
 
 ## What I built
 
@@ -42,7 +41,7 @@ than for decoration:
    `host/http.egress_denied` — usually during a demo. `contract/tests/allowlist.rs` reads the
    TypeScript grant and fails the build instead.
 2. **CI that builds both targets, because native tests are not enough.** Host-calling code is behind
-   `cfg(target_arch = "wasm32")`. Mid-build, a removed import left 33 native tests green while the
+   `cfg(target_arch = "wasm32")`. Mid-build, a removed import left every native test green while the
    enclave path no longer compiled. That is now a CI failure, not a surprise at deploy time.
 3. **A weekly live smoke test.** The agent runs against testnet every Monday and fails loudly when it
    breaks, with upstream registries checked in a separate job so an outage at GLEIF is
@@ -99,7 +98,7 @@ to justify a rejection to the supplier.
 6. `npm run kyb` — a full KYB verdict against live GLEIF and VIES data
 7. `npm run kyb -- --submit` — onboarding filed; the echoed body shows the `{{profile.*}}` markers
    resolved by the host and never by the contract
-8. `npm run test:contract` — 33 tests passing with no credentials configured
+8. `npm run test:contract` — 37 tests passing with no credentials configured
 
 ## Usefulness and ease of maintenance
 
@@ -107,14 +106,14 @@ This was the judging criterion I optimised for, so the specifics rather than adj
 
 - **It runs with no third-party accounts.** GLEIF and VIES are free and keyless. The only credentials
   anyone needs are their own two T3N keys.
-- **33 tests, none of which need credentials.** CI builds the contract, runs the suite and typechecks
+- **37 tests, none of which need credentials.** CI builds the contract, runs the suite and typechecks
   the client on every push, with no secrets configured.
 - **The build fails when the grant drifts from the code.** `contract/tests/allowlist.rs` reads
   `src/session.ts` and fails if a host or function the contract uses is missing from the agent grant.
   That mismatch is otherwise invisible until runtime, where it appears as `host/http.egress_denied`
   in front of whoever you were demonstrating to.
 - **CI builds both targets.** Host-calling code is `cfg(target_arch = "wasm32")`, so native tests
-  cannot reach it. This bit me mid-build: a removed import kept 33 native tests green while the
+  cannot reach it. This bit me mid-build: a removed import kept every native test green while the
   enclave path no longer compiled. CI now catches it.
 - **It tells you when it stops working.** A weekly workflow runs the real agent against testnet and
   fails loudly if it breaks, with the public registries checked in a separate job so upstream
@@ -201,7 +200,7 @@ I am happy to walk someone through it or answer questions during the transfer.
 > email are resolved inside the enclave and never touch my process.
 >
 > Both registries are public and keyless, so you can clone it and get a real verdict with just your
-> own T3N keys. 33 tests, none of which need credentials.
+> own T3N keys. 37 tests, none of which need credentials.
 >
 > https://github.com/ErnIIk/t3n-kyb-agent
 

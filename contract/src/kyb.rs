@@ -200,7 +200,7 @@ fn run_wasm(req: KybReq) -> Result<KybVerdict, String> {
         lei: req.lei.clone(),
         legal_name: Some(req.legal_name.clone()),
     })?;
-    let entity = gleif::fetch_entity(&entity_url)?;
+    let entity = gleif::fetch_entity(&entity_url, Some(req.legal_name.as_str()))?;
 
     // A missing VAT number is a legitimate state (non-EU supplier), so it must
     // not abort the whole check — it is scored as an incomplete file instead.

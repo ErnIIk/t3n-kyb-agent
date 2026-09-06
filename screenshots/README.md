@@ -12,4 +12,4 @@ reproduce them. See [`docs/WALKTHROUGH.md`](../docs/WALKTHROUGH.md) for what eac
 | 5 | `05-register-card.png` | `npm run register-card` | Public agent card published and read back |
 | 6 | `06-kyb-pass.png` | `npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980` | A full KYB verdict against live GLEIF and VIES data |
 | 7 | `07-kyb-submit.png` | `npm run kyb -- … --submit` | Onboarding filed; the echoed body shows `{{profile.*}}` resolved by the host, not by the contract |
-| 8 | `08-tests.png` | `npm run test:contract` | 33 tests passing with no credentials configured |
+| 8 | `08-tests.png` | `npm run test:contract` | 37 tests passing with no credentials configured |

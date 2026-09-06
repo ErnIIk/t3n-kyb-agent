@@ -8,7 +8,7 @@
 //! This lookup carries no personal data, so it uses the plain `http` capability
 //! rather than `http-with-placeholders`.
 
-use crate::common::{urlencode, validate_lei};
+use crate::common::{names_match, urlencode, validate_lei};
 
 pub const GLEIF_HOST: &str = "api.gleif.org";
 const GLEIF_BASE: &str = "https://api.gleif.org/api/v1/lei-records";
@@ -48,7 +48,7 @@ pub fn verify_entity(input: &[u8]) -> Result<Vec<u8>, String> {
 
     #[cfg(target_arch = "wasm32")]
     {
-        let record = fetch_entity(&url)?;
+        let record = fetch_entity(&url, req.legal_name.as_deref())?;
         serde_json::to_vec(&record).map_err(|e| e.to_string())
     }
 
@@ -78,11 +78,50 @@ pub fn build_query_url(req: &VerifyEntityReq) -> Result<String, String> {
     Err("verify-entity: provide either lei or legal_name".to_string())
 }
 
+/// Ranks one GLEIF record against the name that was searched for.
+///
+/// A name search returns whatever GLEIF's index ranks first, which is not
+/// necessarily the company anyone meant. Searching "Acme GmbH" today returns a
+/// retired "Acme International GmbH" ahead of an active "Acme United Europe
+/// GmbH" — taking the first record would report a dead entity for a live
+/// supplier, and the buyer would see a rejection they cannot explain.
+///
+/// Higher is better. Name agreement outranks liveness, because the right
+/// company in a bad state is a real finding, while the wrong company in a good
+/// state is a false clear.
+fn rank_record(record: &serde_json::Value, wanted_name: Option<&str>) -> u8 {
+    let attributes = &record["attributes"];
+    let entity = &attributes["entity"];
+    let name = entity["legalName"]["name"].as_str().unwrap_or("");
+
+    let name_agrees = match wanted_name {
+        Some(wanted) => names_match(wanted, name),
+        // A LEI lookup returns exactly one record; nothing to disambiguate.
+        None => true,
+    };
+    let is_active = entity["status"]
+        .as_str()
+        .unwrap_or("")
+        .eq_ignore_ascii_case("ACTIVE");
+    let is_issued = attributes["registration"]["status"]
+        .as_str()
+        .unwrap_or("")
+        .eq_ignore_ascii_case("ISSUED");
+
+    u8::from(name_agrees) * 4 + u8::from(is_active) * 2 + u8::from(is_issued)
+}
+
 /// Parses a GLEIF JSON:API collection response into a flat record.
+///
+/// `wanted_name` is the name the caller searched for, used to pick the most
+/// plausible record out of a multi-match response. Pass `None` for a LEI lookup.
 ///
 /// Pure function: the fixture-driven tests below are the regression suite for
 /// every field this contract depends on.
-pub fn parse_gleif_response(body: &[u8]) -> Result<EntityRecord, String> {
+pub fn parse_gleif_response(
+    body: &[u8],
+    wanted_name: Option<&str>,
+) -> Result<EntityRecord, String> {
     let json: serde_json::Value =
         serde_json::from_slice(body).map_err(|e| format!("gleif: response is not JSON: {e}"))?;
 
@@ -90,11 +129,18 @@ pub fn parse_gleif_response(body: &[u8]) -> Result<EntityRecord, String> {
         .as_array()
         .ok_or("gleif: response has no data array")?;
 
-    let Some(first) = records.first() else {
+    // max_by_key keeps the last maximum; iterating in reverse makes it the
+    // first record at the best rank, preserving GLEIF's own ordering as the
+    // tie-breaker.
+    let Some(best_index) = (0..records.len())
+        .rev()
+        .max_by_key(|i| rank_record(&records[*i], wanted_name))
+    else {
         return Ok(EntityRecord::default());
     };
+    let best = &records[best_index];
 
-    let attributes = &first["attributes"];
+    let attributes = &best["attributes"];
     let entity = &attributes["entity"];
     let address_node = &entity["legalAddress"];
     let address_lines: Vec<String> = address_node["addressLines"]
@@ -121,10 +167,13 @@ pub fn parse_gleif_response(body: &[u8]) -> Result<EntityRecord, String> {
     .collect::<Vec<_>>()
     .join(", ");
 
+    // Everything the selection passed over, so a human can see what else matched
+    // and overrule the choice.
     let candidates = records
         .iter()
-        .skip(1)
-        .filter_map(|record| record["attributes"]["entity"]["legalName"]["name"].as_str())
+        .enumerate()
+        .filter(|(index, _)| *index != best_index)
+        .filter_map(|(_, record)| record["attributes"]["entity"]["legalName"]["name"].as_str())
         .map(str::to_string)
         .collect();
 
@@ -145,8 +194,11 @@ pub fn parse_gleif_response(body: &[u8]) -> Result<EntityRecord, String> {
             .as_str()
             .unwrap_or("")
             .to_string(),
+        // GLEIF returns a full timestamp; the renewal date is what a reviewer
+        // reads, and the time of day is noise in a one-line check summary.
         next_renewal_date: attributes["registration"]["nextRenewalDate"]
             .as_str()
+            .map(|date| date.split('T').next().unwrap_or(date))
             .unwrap_or("")
             .to_string(),
         address,
@@ -158,8 +210,11 @@ pub fn parse_gleif_response(body: &[u8]) -> Result<EntityRecord, String> {
 use crate::host::interfaces::{http as http_iface, logging};
 
 /// Performs the GLEIF call inside the enclave.
+///
+/// `wanted_name` is forwarded to the parser so a multi-match response resolves
+/// to the company that was actually asked for.
 #[cfg(target_arch = "wasm32")]
-pub fn fetch_entity(url: &str) -> Result<EntityRecord, String> {
+pub fn fetch_entity(url: &str, wanted_name: Option<&str>) -> Result<EntityRecord, String> {
     let response = http_iface::call(&http_iface::Request {
         method: http_iface::Verb::Get,
         url: url.to_string(),
@@ -179,7 +234,7 @@ pub fn fetch_entity(url: &str) -> Result<EntityRecord, String> {
         ));
     }
 
-    let record = parse_gleif_response(&response.payload)?;
+    let record = parse_gleif_response(&response.payload, wanted_name)?;
     // Logs carry the company identifier only; no personal data ever reaches here.
     let _ = logging::info(&format!(
         "gleif lookup: found={} lei={}",
@@ -225,25 +280,70 @@ mod tests {
 
     #[test]
     fn parses_a_real_gleif_payload() {
-        let record = parse_gleif_response(FIXTURE).unwrap();
+        let record =
+            parse_gleif_response(FIXTURE, Some("Deutsche Bank Aktiengesellschaft")).unwrap();
         assert!(record.found);
         assert_eq!(record.lei, "529900IH9V4I3VHQVO92");
         assert_eq!(record.legal_name, "Deutsche Bank Aktiengesellschaft");
         assert_eq!(record.entity_status, "ACTIVE");
         assert_eq!(record.registration_status, "ISSUED");
         assert!(record.address.contains("Paris"), "got {}", record.address);
+        // Date only: GLEIF sends "2027-06-02T06:47:59Z".
+        assert_eq!(record.next_renewal_date, "2027-06-02");
     }
 
     #[test]
     fn empty_result_set_is_not_an_error() {
-        let record = parse_gleif_response(br#"{"data":[]}"#).unwrap();
+        let record = parse_gleif_response(br#"{"data":[]}"#, Some("Acme")).unwrap();
         assert!(!record.found);
         assert_eq!(record.lei, "");
     }
 
     #[test]
     fn malformed_response_is_an_error() {
-        assert!(parse_gleif_response(b"<html>502</html>").is_err());
-        assert!(parse_gleif_response(br#"{"errors":[]}"#).is_err());
+        assert!(parse_gleif_response(b"<html>502</html>", None).is_err());
+        assert!(parse_gleif_response(br#"{"errors":[]}"#, None).is_err());
+    }
+
+    // Three real records GLEIF returns for "Acme GmbH", in its own ranking order:
+    //   1. Acme International GmbH   INACTIVE / RETIRED
+    //   2. Acme United Europe GmbH   ACTIVE   / ISSUED
+    //   3. ACME the game company GmbH ACTIVE  / LAPSED
+    const MULTI: &[u8] = include_bytes!("../tests/fixtures/gleif_acme_multi.json");
+
+    #[test]
+    fn multi_match_prefers_a_live_registration_over_gleif_ordering() {
+        let record = parse_gleif_response(MULTI, Some("Acme GmbH")).unwrap();
+        // Taking data[0] would report a retired entity for a live supplier.
+        assert_eq!(record.legal_name, "Acme United Europe GmbH");
+        assert_eq!(record.entity_status, "ACTIVE");
+        assert_eq!(record.registration_status, "ISSUED");
+    }
+
+    #[test]
+    fn the_records_not_chosen_are_offered_as_candidates() {
+        let record = parse_gleif_response(MULTI, Some("Acme GmbH")).unwrap();
+        assert_eq!(record.candidates.len(), 2);
+        assert!(record
+            .candidates
+            .iter()
+            .any(|c| c == "Acme International GmbH"));
+        assert!(!record.candidates.contains(&record.legal_name));
+    }
+
+    #[test]
+    fn an_exact_name_match_outranks_a_healthier_registration() {
+        // The right company in a bad state is a finding; the wrong company in a
+        // good state is a false clear.
+        let record = parse_gleif_response(MULTI, Some("Acme International GmbH")).unwrap();
+        assert_eq!(record.legal_name, "Acme International GmbH");
+        assert_eq!(record.entity_status, "INACTIVE");
+    }
+
+    #[test]
+    fn without_a_name_to_match_gleif_ordering_is_preserved() {
+        // A LEI lookup returns one record; nothing should be reordered.
+        let record = parse_gleif_response(MULTI, None).unwrap();
+        assert_eq!(record.legal_name, "Acme United Europe GmbH");
     }
 }

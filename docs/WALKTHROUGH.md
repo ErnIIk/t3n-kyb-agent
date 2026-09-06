@@ -24,7 +24,7 @@ which is also the smallest reproduction for the auth issues in [`BUGS.md`](../BU
 
 | Doc step | Where it lives | Verified by |
 |---|---|---|
-| 1. Write your TEE contract | [`contract/src/`](../contract/src), world in [`contract/wit/world.wit`](../contract/wit/world.wit) | `cargo test` — 33 tests |
+| 1. Write your TEE contract | [`contract/src/`](../contract/src), world in [`contract/wit/world.wit`](../contract/wit/world.wit) | `cargo test` — 37 tests |
 | 2. Build your TEE contract | `npm run build:contract` | `wasm-tools component wit` in CI |
 | 3. Register your TEE contract | [`src/deploy.ts`](../src/deploy.ts) | Screenshot 2 |
 | 4. Invoke your TEE contract | [`src/agent.ts`](../src/agent.ts) | Screenshot 4 |

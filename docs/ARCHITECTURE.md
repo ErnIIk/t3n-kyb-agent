@@ -89,6 +89,13 @@ both — `cargo test` on the host triple *and* `cargo build` for `wasm32-wasip2`
 one lets a broken enclave path pass a green test run; that happened once while building this and is
 why the CI job is shaped this way.
 
+**A name search is ranked, not taken in order.** GLEIF's own ordering puts a retired
+`Acme International GmbH` above an active `Acme United Europe GmbH` for the query "Acme GmbH".
+Reading `data[0]` would therefore fail a live supplier on the strength of a different company's dead
+registration. `rank_record` scores name agreement above liveness, and the passed-over rows are
+returned as `candidates` rather than discarded — the agent should narrow a human's work, not hide the
+alternatives from them.
+
 **The grant list is asserted by a test.** `contract/tests/allowlist.rs` reads `src/session.ts` and
 fails if a host or function used by the contract is missing from the grant. Cross-language coupling
 is usually a smell, but here the alternative is a mismatch that only appears at runtime, in front

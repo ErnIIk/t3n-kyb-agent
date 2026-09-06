@@ -91,7 +91,7 @@ If a test fails after a refresh, that is the point: the parser is out of date wi
 Everything except the live calls works offline, which is what CI does:
 
 ```bash
-npm run test:contract     # host target — 33 tests
+npm run test:contract     # host target — 37 tests
 npm run build:contract    # wasm32-wasip2 component
 npm run typecheck
 ```
