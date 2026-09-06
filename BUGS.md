@@ -317,6 +317,42 @@ case.
 
 ---
 
+## 11. Nothing explains how to claim the *second* key, which every agent needs
+
+**Severity: high** (blocks the exact task this challenge is about, at the first step)
+
+[Agent Auth](https://docs.terminal3.io/developers/adk/overview/agent-auth-adk) is unambiguous that
+the agent is a separate identity with separate funding:
+
+> "Get it a key from the same claim page you used for your own; it comes with credits attached."
+
+The [claim page](https://docs.terminal3.io/developers/adk/get-started/prerequisites/request-test-tokens)
+describes a single flow: sign in with a work email, and "your developer key appears immediately"
+along with a DID and test credits. It never says whether returning to that page issues a *new* key
+or re-displays the same identity, whether a second key needs a second email, or what the limit per
+account is.
+
+So the first instruction of every agent build — get the agent its own key — has no documented
+procedure. The failure mode is quiet, too: reusing the tenant key produces a working handshake and a
+successful `agent-auth-update`, because an identity is allowed to authorise itself. Everything looks
+fine until you realise the delegation demonstrates nothing, since the grantor and grantee are the
+same DID. The alternative failure, generating a keypair locally, authenticates correctly and then
+fails at the first invocation with `InsufficientCreditError`, which reads like a billing problem
+rather than "this identity was never claimed".
+
+**Reproduction:** follow the Quickstart, then follow Agent Auth. At the line above, there is nowhere
+to go.
+
+**Fix:** one paragraph on the claim page — whether signing in again issues a fresh key, and if not,
+how to request an agent identity. Given that the same page already has an optional campaign-code
+field, an "I need a key for an agent" path would fit naturally beside it.
+
+**What I did:** `npm run whoami` authenticates both keys, prints both DIDs, and exits non-zero with
+an explanation if they are the same identity — so the silent-reuse failure becomes a loud one before
+anything is deployed.
+
+---
+
 ## Things that worked exactly as documented
 
 Worth saying, since a bug list on its own is a distorted picture:

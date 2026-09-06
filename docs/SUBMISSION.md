@@ -138,9 +138,19 @@ This was the judging criterion I optimised for, so the specifics rather than adj
 
 ## Bugs found
 
-Ten issues, each with reproduction steps and the workaround, in
-[`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md). The three that cost real time
-are all cases where copying the documented code produces something that does not work:
+Eleven issues, each with reproduction steps and the workaround, in
+[`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md).
+
+The one I would fix first is not a code bug at all. **Nothing documents how to claim the second
+key** — the one the agent needs. Agent Auth says to get it "from the same claim page you used for
+your own", and that page only describes a single sign-in that issues one key. Whether returning
+issues a fresh key, whether a second email is needed, what the per-account limit is: none of it is
+stated. That is the first instruction of every agent build, and it has no procedure. Worse, the wrong
+answers fail quietly — reusing the tenant key gives a working handshake and a successful grant, since
+an identity may authorise itself, so the delegation demonstrates nothing while appearing to work.
+
+The three that cost the most time are all cases where copying the documented code produces something
+that does not work:
 
 1. **`agent-auth-adk` puts a `Did` object where a string belongs.** The page ends with
    `const agentDid = await agentClient.authenticate(...)` and feeds that straight into the `agentDid`
@@ -213,9 +223,9 @@ I am happy to walk someone through it or answer questions during the transfer.
 
 Follow-up post:
 
-> Ten bugs and docs issues found on the way, each with a reproduction — including a docs page that
-> hands a `Did` object where a string belongs, a `cargo test` that cannot run because the reference
-> repo pins the WASM target, and a missing `contract_version` the server rejects outright.
+> Eleven bugs and docs issues found on the way, each with a reproduction — including no documented
+> way to claim the second key every agent needs, a docs page that hands a `Did` object where a string
+> belongs, and a `cargo test` that cannot run because the reference repo pins the WASM target.
 >
 > Probable root cause: the docs were validated against SDK 3.x, npm serves 5.10.0.
 
