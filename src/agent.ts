@@ -146,10 +146,14 @@ async function main(): Promise<void> {
     return;
   }
 
+  // pii_did names the user this agent is acting for — the subject whose profile
+  // the host reads when it resolves the {{profile.*}} markers. Only this
+  // function needs it; the lookups above touch no personal data.
   const submission = await agent.client.executeAndDecode<OnboardingResp>({
     contract_id: scriptName,
     contract_version: scriptVersion,
     function_name: "submit-onboarding",
+    pii_did: tenantDid,
     input: {
       legal_name: args.name,
       ...(verdict.entity.lei ? { lei: verdict.entity.lei } : {}),
@@ -175,6 +179,12 @@ main().catch((error: unknown) => {
   }
   if (/InsufficientCredit/i.test(message)) {
     console.error("  -> the AGENT identity has no credits. Claim a second key for it.");
+  }
+  if (/no user context|PlaceholderNoUserContext/i.test(message)) {
+    console.error(
+      "  -> the host could not resolve whose profile to read. Check that T3N_TENANT_DID is the\n" +
+        "     user who signed the grant (npm run grant), not a second account.",
+    );
   }
   process.exitCode = 1;
 });
