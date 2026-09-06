@@ -91,7 +91,7 @@ If a test fails after a refresh, that is the point: the parser is out of date wi
 Everything except the live calls works offline, which is what CI does:
 
 ```bash
-npm run test:contract     # host target — 39 tests
+npm run test:contract     # host target — 40 tests
 npm run build:contract    # wasm32-wasip2 component
 npm run typecheck
 ```
@@ -119,3 +119,20 @@ The parts most likely to need your attention, in order:
    a different JSON body.
 
 Nothing else should need routine edits.
+
+## Claims the docs make that can go stale
+
+Several numbers in the docs are checkable, which means they can also be wrong. When you change the
+code, re-check these:
+
+| Claim | Where | How to check |
+|---|---|---|
+| test count | README, SUBMISSION, WALKTHROUGH, MAINTENANCE, screenshots | `npm run test:contract` |
+| bug count | SUBMISSION | `grep -cE '^## [0-9]+' BUGS.md` |
+| the component's capabilities | ARCHITECTURE, `wit/world.wit` | `wasm-tools component wit contract/target/wasm32-wasip2/release/z_tenant_kyb.wasm` |
+| `index.d.ts` line references | BUGS.md | `sed -n '<line>p' node_modules/@terminal3/t3n-sdk/dist/index.d.ts` |
+
+The capability claim is the one that matters. An overstated security claim is worse than a modest
+accurate one: a reviewer who checks the artifact and finds a discrepancy then doubts the claims that
+were true. This bit once already, when both files said "no clock" while the component imports
+`wasi:clocks/monotonic-clock` via the Rust standard library.

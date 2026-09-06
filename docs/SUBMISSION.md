@@ -124,7 +124,7 @@ to justify a rejection to the supplier.
 6. `npm run kyb`: a full KYB verdict against live GLEIF and VIES data
 7. `npm run kyb -- --submit`: onboarding filed; the echoed body shows the `{{profile.*}}` markers
    resolved by the host and never by the contract
-8. `npm run test:contract`: 39 tests passing with no credentials configured
+8. `npm run test:contract`: 40 tests passing with no credentials configured
 
 ## Usefulness and ease of maintenance
 
@@ -132,7 +132,7 @@ This was the judging criterion I optimised for, so the specifics rather than adj
 
 - **It runs with no third-party accounts.** GLEIF and VIES are free and keyless. The only credentials
   anyone needs are their own two T3N keys.
-- **39 tests, none of which need credentials.** CI builds the contract, runs the suite and typechecks
+- **40 tests, none of which need credentials.** CI builds the contract, runs the suite and typechecks
   the client on every push, with no secrets configured.
 - **The build fails when the grant drifts from the code.** `contract/tests/allowlist.rs` reads
   `src/session.ts` and fails if a host or function the contract uses is missing from the agent grant.
@@ -274,7 +274,7 @@ I am happy to walk someone through it or answer questions during the transfer.
 > email are resolved inside the enclave and never touch my process.
 >
 > Both registries are public and keyless, so you can clone it and get a real verdict with just your
-> own T3N keys. 39 tests, none of which need credentials.
+> own T3N keys. 40 tests, none of which need credentials.
 >
 > https://github.com/ErnIIk/t3n-kyb-agent
 

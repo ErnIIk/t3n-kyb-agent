@@ -37,7 +37,7 @@ signup, nothing to configure:
 npm ci && npm run test:contract && npm run build:contract && npm run typecheck
 ```
 
-That compiles the TEE contract to a WASM component, runs 39 tests, and typechecks the client. The
+That compiles the TEE contract to a WASM component, runs 40 tests, and typechecks the client. The
 same four commands are what CI runs on every push.
 
 ## Why this, on this platform
@@ -224,7 +224,7 @@ This was built to be handed over, so the things that rot are documented rather t
   `ONBOARDING_URL=... npm run deploy` (the host must also be in the grant).
 - **Redeploying** requires bumping `version` in `contract/Cargo.toml`; the node rejects a
   re-register at the same version, and `deploy.ts` says so explicitly when it happens.
-- **No credentials are needed to work on this.** CI builds the contract, runs 39 tests and
+- **No credentials are needed to work on this.** CI builds the contract, runs 40 tests and
   typechecks the client without any T3N key.
 - **It tells you when it stops working.** [A weekly workflow](.github/workflows/smoke.yml) runs the
   real agent against testnet and fails loudly if it breaks, checking the public registries in a

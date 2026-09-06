@@ -33,7 +33,7 @@ Then run the commands below in order. Each one is one screenshot.
 | 5 | `05-register-card.png` | `npm run register-card` | Public agent card published, read back, and its public URL |
 | 6 | `06-kyb-pass.png` | `npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980` | A full KYB verdict against live GLEIF and VIES data |
 | 7 | `07-kyb-submit.png` | `npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980 --submit` | Onboarding filed — HTTP 200, with the contact person's details resolved inside the enclave |
-| 8 | `08-tests.png` | `npm run test:contract` | 39 tests passing with no credentials configured |
+| 8 | `08-tests.png` | `npm run test:contract` | 40 tests passing with no credentials configured |
 
 Optional but persuasive: the agent card served publicly by T3N, proving the agent is discoverable
 by anyone, not just locally:
