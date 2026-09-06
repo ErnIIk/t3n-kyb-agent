@@ -132,6 +132,15 @@ npm run kyb -- --name "Acme GmbH" --country DE --vat 811907980 --submit
 after a failure is safe, and the only thing that ever needs a manual bump is the contract version
 in `contract/Cargo.toml`.
 
+Optionally, make the agent discoverable to other agents and services:
+
+```bash
+npm run register-card      # publishes a public agent card, hosted by T3N itself
+```
+
+The card is generated from the same constants as the grant, so it cannot advertise a skill the
+agent has not been authorised to perform.
+
 ## Layout
 
 ```
@@ -148,6 +157,7 @@ src/                 the TypeScript side
   whoami.ts          check credentials before deploying
   deploy.ts          register the contract, create KV maps, seed config
   grant.ts           the user's signed authorisation of the agent
+  register-card.ts   publish the public agent card (discovery)
   agent.ts           the agent itself
 ```
 

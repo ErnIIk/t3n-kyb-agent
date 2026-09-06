@@ -77,12 +77,16 @@ This was the judging criterion I optimised for, so the specifics:
 - **The scoring is a table, not a black box.** Every rule that can reject a supplier is one line in
   `kyb.rs` and one entry in the returned `checks` array, because a procurement officer has to be
   able to justify a rejection to the supplier.
+- **The agent is discoverable, and its card cannot lie.** `npm run register-card` publishes a public
+  agent card hosted by T3N itself — no external pinning service to keep alive. It is generated from
+  the same constants as the grant, so the card cannot advertise a skill the agent was never
+  authorised to perform.
 - **Handover docs exist.** `docs/MAINTENANCE.md` covers routine tasks, what rots on its own and how
   you find out, fixture refresh, key rotation, and the three files a new owner will actually edit.
 
 ## Bugs found
 
-Eight issues, each with reproduction steps and the workaround, in
+Ten issues, each with reproduction steps and the workaround, in
 [`BUGS.md`](https://github.com/ErnIIk/t3n-kyb-agent/blob/main/BUGS.md). The three that cost real time —
 all three are cases where copying the documented code produces something that does not work:
 

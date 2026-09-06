@@ -12,6 +12,7 @@
     "whoami": "tsx src/whoami.ts",
     "deploy": "tsx src/deploy.ts",
     "grant": "tsx src/grant.ts",
+    "register-card": "tsx src/register-card.ts",
     "kyb": "tsx src/agent.ts",
     "setup": "npm run build:contract && npm run deploy && npm run grant"
   },
