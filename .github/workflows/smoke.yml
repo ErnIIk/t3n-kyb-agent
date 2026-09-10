@@ -80,11 +80,6 @@ jobs:
           T3N_API_KEY: ${{ secrets.T3N_API_KEY }}
           T3N_AGENT_KEY: ${{ secrets.T3N_AGENT_KEY }}
           T3N_TENANT_DID: ${{ secrets.T3N_TENANT_DID }}
-          # Required while the testnet trust manifest omits rtmr1_allowlist
-          # (BUGS.md #12) — without it the SDK refuses to connect at all.
-          # Remove this line once the cluster publishes the field; the run then
-          # verifies node attestation properly and should still pass.
-          T3N_UNSAFE_TRUST: "1"
         run: |
           set -o pipefail
           npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" \

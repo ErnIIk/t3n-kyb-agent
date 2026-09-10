@@ -31,7 +31,7 @@
 
 /// Bumped on every registration: the node rejects a re-register at a version
 /// that is not strictly higher than the deployed one.
-pub const CONTRACT_VERSION: &str = "0.1.2";
+pub const CONTRACT_VERSION: &str = "0.1.3";
 
 wit_bindgen::generate!({
     world: "tenant-kyb",

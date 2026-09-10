@@ -1,7 +1,9 @@
 # Bugs and documentation issues found while building this
 
 Everything below was hit while building `t3n-kyb-agent` against the refreshed ADK docs
-(SDK `@terminal3/t3n-sdk@5.10.0`, docs as of 2026-09-06, Windows 11 / Node 24.14 / Rust 1.98).
+(docs as of 2026-09-06, Windows 11 / Node 24.14 / Rust 1.98). This project runs on
+`@terminal3/t3n-sdk@5.2.0`, the version Terminal 3 recommends; issue 12 is why, and covers what
+happens on 5.10 and later.
 Each entry has the reproduction, what actually happens, and the workaround that unblocked me.
 
 Ordered by how much time they cost.
@@ -425,68 +427,64 @@ issue and issue 11.
 
 ---
 
-## 12. The testnet trust manifest is missing a field SDK 5.10 requires, so nothing can connect
+## 12. SDK 5.10+ rejects the testnet trust manifest that 5.2 accepts
 
-**Severity: critical** (every current SDK install fails at the first line of the Quickstart)
+**Severity: critical on 5.10+** (nothing connects at all), **avoided by pinning 5.2**
 
-`fetchTrustedManifest("testnet")`, step 3 of the Quickstart and the first network call any project
-makes, throws:
+`fetchTrustedManifest("testnet")` is step 3 of the Quickstart and the first network call any project
+makes. On `@terminal3/t3n-sdk@5.10.0` it throws:
 
 ```
 Error: Trust manifest at https://cn-api.sg.testnet.t3n.terminal3.io/api/trust-manifest is malformed.
     at fetchTrustedManifest (.../@terminal3/t3n-sdk/dist/index.esm.js:2:413646)
 ```
 
-The endpoint itself is healthy: HTTP 200, valid JSON, signed 2026-08-27:
-
-```json
-{
-  "cluster": "testnet",
-  "version": 1787800421,
-  "peer_ids": ["QmPk4AtbFore74fJoP4CoS9Q96TvRvoQWR4VmkYtkBLmwz", "…"],
-  "rtmr3_allowlist": ["+XO6nLsfqnTkX0VcNk9AaXAu79ErxURODtjuGOIF8Sk7OQYq3PVVsMG8jzDEeNJQ"],
-  "signed_at": "2026-08-27T03:13:41Z",
-  "signature": "387384a9…"
-}
-```
-
-What it lacks is `rtmr1_allowlist`. SDK 5.10 declares it mandatory:
+The endpoint is healthy: HTTP 200, valid JSON, signed 2026-08-27, publishing `cluster`, `version`,
+`peer_ids`, `rtmr3_allowlist`, `signed_at` and `signature`. What it lacks is `rtmr1_allowlist`, which
+5.10 declares mandatory:
 
 ```typescript
 // index.d.ts:5807 — SignedTrustManifest
-/** Base64-encoded 48-byte RTMR1 measurements of the expected image(s). */
 rtmr1_allowlist: string[];
 
 // index.d.ts:665 — TrustAnchor
-// "Base64-encoded 48-byte RTMR1 measurements … **Must be non-empty.**
-//  the real rootfs-integrity signal"
+// "Base64-encoded 48-byte RTMR1 measurements … **Must be non-empty.**"
 ```
 
-So the cluster publishes a pre-RTMR1 manifest while the published SDK requires RTMR1. Switching
-environment does not help: `NODE_URLS` maps **both** `testnet` and `sandbox` to the same host
-(`https://cn-api.sg.testnet.t3n.terminal3.io`), so the claim page's own sample code,
-`setEnvironment("sandbox")`, hits the identical broken manifest.
+**The same manifest is accepted by 5.2.0**, which resolves it to an anchor of `expected_peer_ids`,
+`rtmr3_allowlist` and `source`, never asking for RTMR1. So this is a client-side version gap rather
+than a broken cluster: the published SDK moved to a stricter anchor before the testnet manifest
+carried the field that anchor requires.
 
-**Reproduction:** `npm install @terminal3/t3n-sdk`, then run the Quickstart verbatim. It fails before
-authenticating. `curl https://cn-api.sg.testnet.t3n.terminal3.io/api/trust-manifest` shows the
-missing field.
+**Reproduction:**
 
-**Impact:** this is the first call in the documented flow, so nobody starting today gets past it.
-The only way through is `{ unsafe_trust_server: true }`, the SDK's own escape hatch, which skips DKG
-attestation verification. That is precisely the guarantee the platform sells, so the workaround
-disables the product's core property in order to use it.
+```bash
+npm i @terminal3/t3n-sdk@5.2.0    # fetchTrustedManifest("testnet") resolves
+npm i @terminal3/t3n-sdk@5.10.0   # the same call throws "malformed"
+```
 
-**Aggravating detail:** the failure prints the SDK's obfuscated bundle to the terminal: 1.6 MB of
-minified source before the one line that matters. The actual message is recoverable only with
-`awk 'length < 200'`.
+Switching environment does not help on 5.10: `NODE_URLS` maps **both** `testnet` and `sandbox` to
+`https://cn-api.sg.testnet.t3n.terminal3.io`, so the claim page's own `setEnvironment("sandbox")`
+sample hits the identical failure.
+
+**Impact while it lasts:** on 5.10+ the only way past step 3 is `{ unsafe_trust_server: true }`,
+which skips DKG attestation entirely — the guarantee the platform exists to provide. An agent
+demonstrated that way proves considerably less than one that verified the enclave it talked to.
+
+**Aggravating detail:** the failure prints the SDK's obfuscated bundle to the terminal, 1.6 MB of
+minified source ahead of the one line that matters. The message is recoverable only with something
+like `awk 'length < 200'`.
 
 **Fix:** publish `rtmr1_allowlist` on the testnet manifest, or have `fetchTrustedManifest` degrade
 explicitly ("this cluster predates RTMR1; RTMR3-only verification will be used") instead of rejecting
-the manifest as malformed.
+the manifest as malformed. Naming the supported SDK version on the Quickstart would also save the
+round trip: npm currently serves 5.15 to anyone who types `npm install @terminal3/t3n-sdk`.
 
-**What I did:** `src/session.ts` keeps manifest verification as the default and treats
-`T3N_UNSAFE_TRUST=1` as an explicit, warned-on-every-run opt-out. When the manifest is rejected, the
-error names the cause and the flag rather than leaving the reader with "malformed".
+**What I did:** pinned the dependency to an exact `5.2.0`, the version Terminal 3 recommends, and
+this deployment runs on it with attestation verified for real and no escape hatch in the default
+path. `src/session.ts` still handles 5.10+ for anyone who lands there: it attempts the real manifest
+first, and when the rejection is this one it names the cause, the version gap and the
+`T3N_UNSAFE_TRUST=1` opt-out instead of leaving the reader with the word "malformed".
 
 ---
 

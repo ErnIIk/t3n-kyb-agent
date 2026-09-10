@@ -10,7 +10,7 @@ details ever touching the agent's process.
 $ npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980
 
 agent   : did:t3n:d7a47645b122ce1151f1f6ecdd40a4ab2de7318d
-contract: z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts@0.1.0
+contract: z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts@0.1.3
 supplier: Deutsche Bank Aktiengesellschaft
 
 verdict : PASS (risk 0/100)
@@ -166,11 +166,10 @@ keypair bound to the *same* DID, verified against the live cluster; see [BUGS.md
 A separate agent principal needs a separate claim-page account. `npm run whoami` refuses to
 continue if both keys resolve to one DID, so you find out in five seconds rather than after deploying.
 
-**One flag you currently need.** The testnet trust manifest omits a field SDK 5.10 requires, so
-`fetchTrustedManifest` rejects it and nothing connects ([BUGS.md](BUGS.md) #12). Until the cluster
-publishes `rtmr1_allowlist`, prefix the commands below with `T3N_UNSAFE_TRUST=1`, which uses the
-SDK's documented escape hatch and prints a warning on every run. It skips node attestation, so it is
-a testnet workaround and nothing more.
+**On the SDK version.** This project pins `@terminal3/t3n-sdk` to **5.2.0**, the version Terminal 3
+currently recommends. On 5.10 and later the testnet trust manifest is rejected and nothing connects
+at all ([BUGS.md](BUGS.md) #12). Pinned to 5.2, node attestation is verified for real, with no
+escape hatch and no flags.
 
 ```bash
 git clone https://github.com/ErnIIk/t3n-kyb-agent && cd t3n-kyb-agent
@@ -179,22 +178,22 @@ rustup target add wasm32-wasip2
 
 cp .env.example .env       # paste both keys
 
-T3N_UNSAFE_TRUST=1 npm run quickstart   # documented Quickstart: prints your tenant DID
-T3N_UNSAFE_TRUST=1 npm run whoami       # verifies both identities before anything is deployed
+npm run quickstart         # documented Quickstart: prints your tenant DID
+npm run whoami             # verifies both identities before anything is deployed
 ```
 
 `quickstart` prints your tenant DID. Put it in `.env` as `T3N_TENANT_DID`, then:
 
 ```bash
-T3N_UNSAFE_TRUST=1 npm run setup        # build, register, create maps, sign the grant
-T3N_UNSAFE_TRUST=1 npm run register-card
+npm run setup              # build, register, create maps, sign the grant
+npm run register-card
 
-T3N_UNSAFE_TRUST=1 npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980
-T3N_UNSAFE_TRUST=1 npm run kyb -- --name "Acme GmbH" --country DE --vat 811907980 --submit
+npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980
+npm run kyb -- --name "Acme GmbH" --country DE --vat 811907980 --submit
 ```
 
-Drop the prefix as soon as the manifest is fixed; the code prefers real verification and only falls
-back when the flag is set.
+If you are on 5.10 or later for another reason, `T3N_UNSAFE_TRUST=1` is available as a documented
+escape hatch, but it disables the attestation check and warns on every run.
 
 `npm run setup` is `build:contract` + `deploy` + `grant`. Every step is idempotent, so re-running it
 after a failure is safe, and the only thing that ever needs a manual bump is the contract version

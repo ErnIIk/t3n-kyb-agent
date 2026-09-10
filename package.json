@@ -18,7 +18,7 @@
     "setup": "npm run build:contract && npm run deploy && npm run grant"
   },
   "dependencies": {
-    "@terminal3/t3n-sdk": "^5.10.0",
+    "@terminal3/t3n-sdk": "5.2.0",
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
