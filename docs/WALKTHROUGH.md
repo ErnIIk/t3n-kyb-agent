@@ -4,7 +4,7 @@ The T3 ADK documentation has a Quickstart and a five-step Walkthrough. This page
 step to the file in this repository that performs it, so a reader can follow the platform's own path
 through this codebase without reading all of it.
 
-Every step below was run against testnet, against contract id 981.
+Every step below was run against testnet, against contract id 997.
 
 ## Quickstart
 

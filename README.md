@@ -10,7 +10,7 @@ details ever touching the agent's process.
 $ npm run kyb -- --name "Deutsche Bank Aktiengesellschaft" --country DE --vat 811907980
 
 agent   : did:t3n:d7a47645b122ce1151f1f6ecdd40a4ab2de7318d
-contract: z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts@0.1.3
+contract: z:947e9ba8705790c014d7242cdc67624c5d9b642c:kyb-contracts@0.1.4
 supplier: Deutsche Bank Aktiengesellschaft
 
 verdict : PASS (risk 0/100)

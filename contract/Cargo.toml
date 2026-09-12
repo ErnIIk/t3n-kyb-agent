@@ -1,6 +1,6 @@
 [package]
 name = "z-tenant-kyb"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "KYB counterparty verification TEE contract for Terminal 3 — GLEIF + VIES lookups with PII-safe onboarding via host:interfaces/http-with-placeholders"
 license = "MIT"
