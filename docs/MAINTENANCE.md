@@ -103,7 +103,10 @@ changes what you get; see BUGS.md #2.
 ## Cost and quota notes
 
 - Each contract invocation spends the **agent's** credits, not the tenant's. An agent that stops
-  working with `InsufficientCreditError` needs its own top-up.
+  working with `InsufficientCreditError` needs its own top-up. `npm run balance` prints both
+  balances in T3N and exits non-zero when the agent drops below 500, which is the failure worth
+  catching early: the tenant can be flush while the agent is empty, and the deployment then looks
+  healthy right up until the first call.
 - `run-kyb-check` is one invocation that makes two upstream calls, rather than two invocations. That
   is deliberate: it halves the credit cost of the common path and keeps the intermediate lookups
   inside the enclave.
